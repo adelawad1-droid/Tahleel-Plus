@@ -13,8 +13,9 @@ import { Pricing } from './components/Pricing';
 import { AdminPanel } from './components/AdminPanel';
 import { UserMenu } from './components/UserMenu';
 import { SavedLibrary } from './components/SavedLibrary';
+import { Profile } from './components/Profile';
 
-type ViewMode = 'HOME' | 'ADMIN' | 'PRICING' | 'LIBRARY' | 'AUTH';
+type ViewMode = 'HOME' | 'ADMIN' | 'PRICING' | 'LIBRARY' | 'AUTH' | 'PROFILE';
 
 const App: React.FC = () => {
   const [lang, setLang] = useState<Language>('ar');
@@ -245,6 +246,7 @@ const App: React.FC = () => {
         {view === 'ADMIN' && user && <AdminPanel lang={lang} />}
         {view === 'PRICING' && user && <Pricing lang={lang} onSelect={() => setView('HOME')} />}
         {view === 'LIBRARY' && user && <SavedLibrary lang={lang} />}
+        {view === 'PROFILE' && user && profile && <Profile profile={profile} lang={lang} onRefresh={() => refreshProfile(user.uid, user.email!)} />}
         {view === 'AUTH' && !user && (
           <div className="py-12">
              <Auth lang={lang} />

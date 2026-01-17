@@ -6,7 +6,7 @@ import { TRANSLATIONS } from '../constants';
 interface Props {
   profile: UserProfile;
   lang: Language;
-  onNavigate: (view: 'HOME' | 'ADMIN' | 'PRICING' | 'LIBRARY') => void;
+  onNavigate: (view: 'HOME' | 'ADMIN' | 'PRICING' | 'LIBRARY' | 'PROFILE') => void;
   onLogout: () => void;
 }
 
@@ -31,11 +31,11 @@ export const UserMenu: React.FC<Props> = ({ profile, lang, onNavigate, onLogout 
         className="flex items-center gap-3 p-1.5 pe-4 bg-white border border-slate-200 rounded-full hover:border-blue-400 hover:shadow-lg transition-all group"
       >
         <div className="w-10 h-10 bg-slate-900 rounded-full flex items-center justify-center text-white font-black text-sm group-hover:bg-blue-600 transition-colors">
-          {profile.email[0].toUpperCase()}
+          {profile.displayName ? profile.displayName[0].toUpperCase() : profile.email[0].toUpperCase()}
         </div>
         <div className="text-start hidden sm:block">
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{profile.plan}</p>
-          <p className="text-xs font-bold text-slate-700 max-w-[120px] truncate">{profile.email}</p>
+          <p className="text-xs font-bold text-slate-700 max-w-[120px] truncate">{profile.displayName || profile.email}</p>
         </div>
       </button>
 
@@ -45,6 +45,13 @@ export const UserMenu: React.FC<Props> = ({ profile, lang, onNavigate, onLogout 
             <span className="text-[10px] font-black bg-blue-100 text-blue-700 px-2 py-1 rounded-lg uppercase">{profile.plan} PLAN</span>
             <p className="text-xs font-bold text-slate-500 mt-2 truncate">{profile.email}</p>
           </div>
+
+          <button onClick={() => { onNavigate('PROFILE'); setIsOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-slate-700 hover:bg-blue-50 hover:text-blue-600 rounded-2xl transition-colors group">
+             <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
+               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+             </div>
+             {t.profile}
+          </button>
 
           <button onClick={() => { onNavigate('LIBRARY'); setIsOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-slate-700 hover:bg-blue-50 hover:text-blue-600 rounded-2xl transition-colors group">
              <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">

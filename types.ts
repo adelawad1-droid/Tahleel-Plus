@@ -32,6 +32,7 @@ export interface PlanConfig {
 export interface UserProfile {
   uid: string;
   email: string;
+  displayName?: string;
   plan: PlanType;
   status: UserStatus;
   createdAt: number;
@@ -155,4 +156,13 @@ export interface TranslationStrings {
   emailInUse: string;
   wrongPassword: string;
   getKey: string;
+  profile: string;
+  updateProfile: string;
+  displayName: string;
+  saveChanges: string;
+  changePassword: string;
+  newPassword: string;
+  deleteAccount: string;
+  deleteAccountWarning: string;
+  reauthRequired: string;
 }

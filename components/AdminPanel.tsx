@@ -8,7 +8,7 @@ interface Props {
   lang: Language;
 }
 
-type AdminTab = 'USERS' | 'PLANS' | 'SITE_SETTINGS' | 'SETTINGS';
+type AdminTab = 'USERS' | 'PLANS' | 'SITE_SETTINGS';
 
 interface ModalState {
   isOpen: boolean;
@@ -304,12 +304,6 @@ export const AdminPanel: React.FC<Props> = ({ lang }) => {
           >
             {isRtl ? 'إعدادات الموقع' : 'Site Info'}
           </button>
-          <button 
-            onClick={() => setActiveTab('SETTINGS')}
-            className={`px-6 py-3 rounded-xl text-sm font-black transition-all shrink-0 ${activeTab === 'SETTINGS' ? 'bg-white text-blue-600 shadow-lg' : 'text-slate-500 hover:text-slate-700'}`}
-          >
-            {isRtl ? 'مفاتيح الربط' : 'API Keys'}
-          </button>
         </div>
 
         <div className="flex items-center gap-4">
@@ -525,78 +519,6 @@ export const AdminPanel: React.FC<Props> = ({ lang }) => {
                     className="w-full bg-emerald-600 text-white py-5 rounded-[1.8rem] font-black text-lg hover:bg-emerald-700 hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-emerald-200 disabled:opacity-50"
                   >
                     {savingConfig ? <div className="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin mx-auto"></div> : (isRtl ? 'تحديث إعدادات الموقع' : 'Update Site Branding')}
-                  </button>
-                </div>
-             </div>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'SETTINGS' && (
-        <div className="max-w-2xl mx-auto space-y-6">
-          <div className="bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-xl space-y-8 animate-in zoom-in">
-             <div className="text-center">
-                <div className="w-20 h-20 bg-blue-100 text-blue-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-                   <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                </div>
-                <h2 className="text-3xl font-black">{isRtl ? 'مفاتيح الربط والذكاء الاصطناعي' : 'AI & Search API Keys'}</h2>
-                <p className="text-slate-400 text-sm mt-3 font-medium">{isRtl ? 'مفاتيح التشغيل الأساسية لمحركات البحث والتحليل' : 'Primary keys for search and analysis engines'}</p>
-             </div>
-
-             <div className="space-y-8">
-                <div className="group relative">
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">{isRtl ? 'مفتاح Gemini API' : 'Gemini API Key'}</label>
-                    <a 
-                      href="https://aistudio.google.com/app/apikey" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-[10px] font-black text-blue-600 hover:text-blue-800 flex items-center gap-1 bg-blue-50 px-3 py-1 rounded-lg transition-all"
-                    >
-                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                      {t.getKey}
-                    </a>
-                  </div>
-                  <input 
-                    type="password" 
-                    value={appConfig.geminiApiKey}
-                    onChange={(e) => setAppConfig({...appConfig, geminiApiKey: e.target.value})}
-                    placeholder="AIzaSy..."
-                    className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-mono text-sm outline-none focus:border-blue-500 transition-all shadow-sm"
-                  />
-                  <p className="text-[9px] text-slate-400 mt-2 italic">{isRtl ? 'يستخدم للتحليل الاستراتيجي وتوليد التقارير عبر نماذج Google Gemini' : 'Used for strategic analysis and report generation via Google Gemini models'}</p>
-                </div>
-
-                <div className="group relative">
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">{isRtl ? 'معرف محرك البحث (CX ID)' : 'Google Search ID (CX)'}</label>
-                    <a 
-                      href="https://programmablesearchengine.google.com/controlpanel/all" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-[10px] font-black text-blue-600 hover:text-blue-800 flex items-center gap-1 bg-blue-50 px-3 py-1 rounded-lg transition-all"
-                    >
-                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                      {t.getKey}
-                    </a>
-                  </div>
-                  <input 
-                    type="text" 
-                    value={appConfig.googleSearchId || ''}
-                    onChange={(e) => setAppConfig({...appConfig, googleSearchId: e.target.value})}
-                    placeholder="0123456789..."
-                    className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-mono text-sm outline-none focus:border-blue-500 transition-all shadow-sm"
-                  />
-                  <p className="text-[9px] text-slate-400 mt-2 italic">{isRtl ? 'يستخدم لجلب بيانات المنافسين المباشرة من الويب (Search Engine ID)' : 'Used for fetching live competitor data from the web (Search Engine ID)'}</p>
-                </div>
-
-                <div className="pt-4">
-                  <button 
-                    onClick={handleSaveAppConfig}
-                    disabled={savingConfig}
-                    className="w-full bg-blue-600 text-white py-5 rounded-[1.8rem] font-black text-lg hover:bg-blue-700 hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-blue-200 disabled:opacity-50"
-                  >
-                    {savingConfig ? <div className="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin mx-auto"></div> : (isRtl ? 'حفظ إعدادات النظام' : 'Save System Keys')}
                   </button>
                 </div>
              </div>

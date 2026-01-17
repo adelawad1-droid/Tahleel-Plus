@@ -36,6 +36,11 @@ export const syncUserProfile = async (uid: string, email: string): Promise<UserP
   }
 };
 
+export const updateUserDetails = async (uid: string, updates: Partial<UserProfile>) => {
+  const userRef = doc(db, 'users', uid);
+  await updateDoc(userRef, updates);
+};
+
 export const getAppConfig = async (): Promise<AppConfig | null> => {
   try {
     const docRef = doc(db, 'configs', 'app');
@@ -71,16 +76,12 @@ export const saveAnalysis = async (userId: string, queryStr: string, data: Analy
 
 export const getSavedAnalyses = async (userId: string): Promise<SavedAnalysis[]> => {
   try {
-    // تم إزالة orderBy من هنا لأنها تتطلب إنشاء Index يدوي في Firebase Console
-    // سنقوم بالترتيب برمجياً بعد جلب البيانات لضمان اشتغالها فوراً
     const q = query(
       collection(db, 'saved_analyses'), 
       where('userId', '==', userId)
     );
     const snap = await getDocs(q);
     const results = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as SavedAnalysis));
-    
-    // ترتيب النتائج من الأحدث إلى الأقدم برمجياً
     return results.sort((a, b) => b.timestamp - a.timestamp);
   } catch (error: any) {
     console.error("Get Saved Analyses Error:", error.message);

@@ -1,7 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 import { AnalysisResult } from "../types";
-import { getAppConfig } from "./userService";
 
 const ANALYSIS_SCHEMA = {
   type: Type.OBJECT,
@@ -128,19 +127,19 @@ const ANALYSIS_SCHEMA = {
 };
 
 export async function analyzeEcommerceQuery(query: string, lang: 'ar' | 'en'): Promise<AnalysisResult> {
-  // Fetch application configuration directly from Firestore to ensure the latest keys are used
-  const dbConfig = await getAppConfig();
-  
-  // 1. Prioritize DB-stored key, fallback to ENV for initial setup if DB is empty
-  const apiKey = dbConfig?.geminiApiKey || process.env.API_KEY;
+  /**
+   * Use process.env.API_KEY exclusively as per the Google GenAI coding guidelines.
+   * Assume this variable is pre-configured and accessible in the environment.
+   */
+  const apiKey = process.env.API_KEY;
 
-  if (!apiKey || apiKey.length < 10) {
+  if (!apiKey) {
     throw new Error(lang === 'ar' 
-      ? "خطأ في الاتصال: لم يتم ضبط مفتاح الذكاء الاصطناعي (Gemini API Key) في لوحة التحكم بشكل صحيح." 
-      : "Connection Error: Gemini API Key is missing or invalid in the Admin Dashboard.");
+      ? "خطأ في الاتصال: لم يتم العثور على مفتاح API في البيئة." 
+      : "Connection Error: Gemini API Key is missing in the environment.");
   }
 
-  // 2. Initialize the AI client with the provided key
+  // Always use { apiKey: ... } named parameter for initialization
   const ai = new GoogleGenAI({ apiKey });
   
   const systemInstruction = `
@@ -158,6 +157,7 @@ export async function analyzeEcommerceQuery(query: string, lang: 'ar' | 'en'): P
   `;
 
   try {
+    // Correct usage of generateContent with model name and prompt
     const response = await ai.models.generateContent({
       model: "gemini-3-pro-preview",
       contents: `Perform deep market analysis for: "${query}"`,
@@ -165,18 +165,18 @@ export async function analyzeEcommerceQuery(query: string, lang: 'ar' | 'en'): P
         systemInstruction,
         responseMimeType: "application/json",
         responseSchema: ANALYSIS_SCHEMA,
-        // The Google Search grounding tool automatically uses the session credentials
-        // If the user provided a Custom Search ID, Gemini Pro manages the grounding internally.
+        // Using googleSearch tool for grounding as requested
         tools: [{ googleSearch: {} }],
       },
     });
 
+    // Directly access the .text property from GenerateContentResponse
     const text = response.text;
     if (!text) throw new Error("Empty AI response");
 
     const result = JSON.parse(text) as AnalysisResult;
     
-    // Add grounding metadata if available
+    // Extract website URLs from grounding metadata if available
     const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
     if (groundingChunks) {
       result.sources = groundingChunks
@@ -192,7 +192,7 @@ export async function analyzeEcommerceQuery(query: string, lang: 'ar' | 'en'): P
     console.error("AI Service Error:", error);
     
     if (error.message?.includes("API_KEY_INVALID")) {
-      throw new Error(lang === 'ar' ? "مفتاح API غير صالح. يرجى التأكد من صحة المفتاح في لوحة التحكم." : "Invalid API Key. Please verify your Gemini API key in the admin panel.");
+      throw new Error(lang === 'ar' ? "مفتاح API غير صالح. يرجى التأكد من ضبط المفتاح بشكل صحيح." : "Invalid API Key. Please ensure the environment key is correct.");
     }
     
     throw new Error(lang === 'ar' 
