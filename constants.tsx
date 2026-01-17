@@ -52,6 +52,7 @@ export const TRANSLATIONS: Record<'ar' | 'en', TranslationStrings> = {
     resetSent: 'تم إرسال رابط استعادة كلمة المرور إلى بريدك الإلكتروني.',
     emailInUse: 'هذا البريد الإلكتروني مسجل مسبقاً. يرجى تسجيل الدخول بدلاً من الاشتراك.',
     wrongPassword: 'البريد الإلكتروني أو كلمة المرور غير صحيحة.',
+    getKey: 'احصل على المفتاح',
   },
   en: {
     title: 'Tahleel Plus',
@@ -103,5 +104,6 @@ export const TRANSLATIONS: Record<'ar' | 'en', TranslationStrings> = {
     resetSent: 'A password reset link has been sent to your email.',
     emailInUse: 'This email is already in use. Please login instead.',
     wrongPassword: 'Invalid email or password.',
+    getKey: 'Get Key',
   },
 };

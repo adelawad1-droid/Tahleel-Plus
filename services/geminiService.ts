@@ -68,7 +68,7 @@ const ANALYSIS_SCHEMA = {
     finalVerdict: {
       type: Type.OBJECT,
       properties: {
-        recommendation: { type: Type.STRING }, // GO, NO-GO, PROCEED WITH CAUTION
+        recommendation: { type: Type.STRING },
         reasoning: { type: Type.STRING },
       },
       required: ["recommendation", "reasoning"],
@@ -128,57 +128,55 @@ const ANALYSIS_SCHEMA = {
 };
 
 export async function analyzeEcommerceQuery(query: string, lang: 'ar' | 'en'): Promise<AnalysisResult> {
-  // Fetch API key from DB or fallback to process.env
+  // Fetch application configuration directly from Firestore to ensure the latest keys are used
   const dbConfig = await getAppConfig();
+  
+  // 1. Prioritize DB-stored key, fallback to ENV for initial setup if DB is empty
   const apiKey = dbConfig?.geminiApiKey || process.env.API_KEY;
 
-  if (!apiKey) {
-    throw new Error("AI API Key is not configured. Please contact the administrator.");
+  if (!apiKey || apiKey.length < 10) {
+    throw new Error(lang === 'ar' 
+      ? "خطأ في الاتصال: لم يتم ضبط مفتاح الذكاء الاصطناعي (Gemini API Key) في لوحة التحكم بشكل صحيح." 
+      : "Connection Error: Gemini API Key is missing or invalid in the Admin Dashboard.");
   }
 
+  // 2. Initialize the AI client with the provided key
   const ai = new GoogleGenAI({ apiKey });
   
   const systemInstruction = `
-    You are an elite Saudi market strategist and business consultant (Expert Level).
-    Provide a hyper-professional data analysis for: "${query}".
+    You are an elite Saudi market strategist (Expert Level). 
+    Your mission is to provide high-precision business analysis for: "${query}".
     
-    You MUST address all 18 professional pillars for the Saudi Market:
-    1. Actual demand vs perceived demand.
-    2. Clarity of the problem being solved.
-    3. Search volume and interest within KSA (specifically).
-    4. Saudi Cultural/Behavioral compatibility (buying habits).
-    5. Detailed audience persona (Saudi demographics).
-    6. Direct competitors (real active stores).
-    7. Unique Selling Point (USP) recommendation.
-    8. Pricing viability in SAR.
-    9. Projected profit margins (benchmarks).
-    10. Best sales channels (Snapchat/TikTok ads vs SEO vs WhatsApp).
-    11. Estimated Customer Acquisition Cost (CAC) for this niche in KSA.
-    12. Scalability potential.
-    13. Seasonal impacts (Ramadan, Eids, Back to school).
-    14. Saturation and imitation risks.
-    15. Supply chain and ops ease (importing to KSA, local storage).
-    16. Optimal payment/delivery (Tabby/Tamara, Aramex/SMSA/Spl).
-    17. Projected KPI benchmarks (ROAS/Conversion).
-    18. FINAL VERDICT: A professional GO or NO-GO decision.
-
-    Language: ${lang === 'ar' ? 'Arabic' : 'English'}.
-    Use REAL current data from Live Search for the year 2025.
+    CRITICAL RULES:
+    - Use LIVE Search to find actual stores in KSA (Salla, Zid, Floward, Noon, etc.)
+    - Analyze pricing in SAR.
+    - Evaluate cultural compatibility with Saudi Vision 2030 and KSA consumer behavior.
+    - Provide a definitive GO, NO-GO, or PROCEED WITH CAUTION verdict.
+    
+    LANGUAGE: ${lang === 'ar' ? 'Arabic' : 'English'}.
+    Year: 2025.
   `;
 
-  const response = await ai.models.generateContent({
-    model: "gemini-3-pro-preview",
-    contents: `Analyze this query for the Saudi market with full depth: "${query}"`,
-    config: {
-      systemInstruction,
-      responseMimeType: "application/json",
-      responseSchema: ANALYSIS_SCHEMA,
-      tools: [{ googleSearch: {} }],
-    },
-  });
-
   try {
-    const result = JSON.parse(response.text) as AnalysisResult;
+    const response = await ai.models.generateContent({
+      model: "gemini-3-pro-preview",
+      contents: `Perform deep market analysis for: "${query}"`,
+      config: {
+        systemInstruction,
+        responseMimeType: "application/json",
+        responseSchema: ANALYSIS_SCHEMA,
+        // The Google Search grounding tool automatically uses the session credentials
+        // If the user provided a Custom Search ID, Gemini Pro manages the grounding internally.
+        tools: [{ googleSearch: {} }],
+      },
+    });
+
+    const text = response.text;
+    if (!text) throw new Error("Empty AI response");
+
+    const result = JSON.parse(text) as AnalysisResult;
+    
+    // Add grounding metadata if available
     const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
     if (groundingChunks) {
       result.sources = groundingChunks
@@ -188,9 +186,17 @@ export async function analyzeEcommerceQuery(query: string, lang: 'ar' | 'en'): P
           uri: chunk.web.uri,
         }));
     }
+    
     return result;
-  } catch (error) {
-    console.error("Analysis Parse Error:", error);
-    throw new Error("Failed to generate strategic report. Please try again.");
+  } catch (error: any) {
+    console.error("AI Service Error:", error);
+    
+    if (error.message?.includes("API_KEY_INVALID")) {
+      throw new Error(lang === 'ar' ? "مفتاح API غير صالح. يرجى التأكد من صحة المفتاح في لوحة التحكم." : "Invalid API Key. Please verify your Gemini API key in the admin panel.");
+    }
+    
+    throw new Error(lang === 'ar' 
+      ? "فشل في إنشاء التقرير. تأكد من تفعيل خدمة الدفع في Google AI Studio وربط المفتاح." 
+      : "Failed to generate report. Ensure billing is enabled in Google AI Studio and the key is active.");
   }
 }

@@ -63,15 +63,40 @@ const App: React.FC = () => {
     setPlans(plansData);
     setAppConfig(configData);
     
-    if (configData?.siteName) {
-      document.title = configData.siteName;
+    // SEO & Branding Sync
+    if (configData) {
+      const activeName = lang === 'ar' ? configData.siteNameAr : configData.siteNameEn;
+      const activeDesc = lang === 'ar' ? configData.siteDescriptionAr : configData.siteDescriptionEn;
+      const activeKeywords = lang === 'ar' ? configData.siteKeywordsAr : configData.siteKeywordsEn;
+      
+      if (activeName) document.title = activeName;
+      
+      // Update Meta Tags
+      const metaDesc = document.querySelector('meta[name="description"]');
+      if (metaDesc && activeDesc) metaDesc.setAttribute('content', activeDesc);
+      
+      const metaKeywords = document.querySelector('meta[name="keywords"]');
+      if (metaKeywords && activeKeywords) metaKeywords.setAttribute('content', activeKeywords);
+      
+      // Update Favicon
+      if (configData.siteFavicon) {
+        let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
+        if (!link) {
+          link = document.createElement('link');
+          link.rel = 'icon';
+          document.getElementsByTagName('head')[0].appendChild(link);
+        }
+        link.href = configData.siteFavicon;
+      }
     }
   };
 
   useEffect(() => {
+    loadInitialData();
+  }, [lang]);
+
+  useEffect(() => {
     const initApp = async () => {
-      await loadInitialData();
-      
       const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
         if (currentUser) {
           setUser(currentUser);
@@ -163,7 +188,7 @@ const App: React.FC = () => {
     </div>
   );
 
-  const activeSiteName = appConfig?.siteName || t.title;
+  const activeSiteName = (lang === 'ar' ? appConfig?.siteNameAr : appConfig?.siteNameEn) || t.title;
 
   return (
     <div className={`min-h-screen flex flex-col bg-slate-50 font-['Cairo']`} dir={isRtl ? 'rtl' : 'ltr'}>

@@ -6,8 +6,14 @@ export type UserStatus = 'ACTIVE' | 'EXPIRED' | 'BANNED';
 export interface AppConfig {
   geminiApiKey: string;
   googleSearchId?: string;
-  siteName?: string;
+  siteNameAr?: string;
+  siteNameEn?: string;
   siteLogo?: string;
+  siteFavicon?: string;
+  siteDescriptionAr?: string;
+  siteDescriptionEn?: string;
+  siteKeywordsAr?: string;
+  siteKeywordsEn?: string;
   lastUpdated?: number;
 }
 
@@ -148,4 +154,5 @@ export interface TranslationStrings {
   resetSent: string;
   emailInUse: string;
   wrongPassword: string;
+  getKey: string;
 }
