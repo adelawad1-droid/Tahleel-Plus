@@ -340,18 +340,11 @@ const App: React.FC = () => {
         )}
       </main>
 
-      <footer className="w-full py-16 bg-white border-t border-slate-200 text-center text-slate-400 text-sm">
+      <footer className="w-full py-6 bg-white border-t border-slate-100 text-center text-slate-400 text-xs font-bold">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="flex items-center justify-center gap-3 mb-6">
-             <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white text-sm font-black shadow-xl overflow-hidden">
-                {appConfig?.siteLogo ? (
-                   <img src={appConfig.siteLogo} alt="Logo" className="w-full h-full object-cover" />
-                ) : 'TP'}
-             </div>
-             <div className="text-right">
-                <p className="font-black text-slate-900 leading-none">{activeSiteName} • 2025</p>
-             </div>
-          </div>
+          <p>
+            {activeSiteName} — {isRtl ? 'كافة الحقوق محفوظة' : 'All rights reserved'} © 2026
+          </p>
         </div>
       </footer>
     </div>
