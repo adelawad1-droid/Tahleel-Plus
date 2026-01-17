@@ -25,6 +25,7 @@ export const AdminPanel: React.FC<Props> = ({ lang }) => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [plans, setPlans] = useState<PlanConfig[]>([]);
   const [appConfig, setAppConfig] = useState<AppConfig>({ 
+    geminiApiKey: '', 
     siteNameAr: 'تحليل بلس', 
     siteNameEn: 'Tahleel Plus',
     siteLogo: '',
@@ -35,6 +36,7 @@ export const AdminPanel: React.FC<Props> = ({ lang }) => {
     siteKeywordsEn: ''
   });
   const [isKeyConnected, setIsKeyConnected] = useState<boolean | null>(null);
+  const [showRawKey, setShowRawKey] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -66,14 +68,15 @@ export const AdminPanel: React.FC<Props> = ({ lang }) => {
 
   const closeModal = () => setModal(prev => ({ ...prev, isOpen: false }));
 
-  const checkApiKeyStatus = async () => {
+  const checkApiKeyStatus = async (currentConfig?: AppConfig) => {
     try {
+      const configToCheck = currentConfig || appConfig;
+      const hasDbKey = !!configToCheck.geminiApiKey && configToCheck.geminiApiKey.length > 10;
+      let hasStudioKey = false;
       if ((window as any).aistudio) {
-        const hasKey = await (window as any).aistudio.hasSelectedApiKey();
-        setIsKeyConnected(hasKey);
-      } else {
-        setIsKeyConnected(false);
+        hasStudioKey = await (window as any).aistudio.hasSelectedApiKey();
       }
+      setIsKeyConnected(hasDbKey || hasStudioKey);
     } catch (e) {
       console.error("Key Status Check Error:", e);
     }
@@ -92,8 +95,10 @@ export const AdminPanel: React.FC<Props> = ({ lang }) => {
       setPlans(planData);
       if (configData) {
         setAppConfig(prev => ({ ...prev, ...configData }));
+        await checkApiKeyStatus(configData);
+      } else {
+        await checkApiKeyStatus();
       }
-      await checkApiKeyStatus();
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -234,7 +239,8 @@ export const AdminPanel: React.FC<Props> = ({ lang }) => {
     setSavingConfig(true);
     try {
       await updateAppConfig(appConfig);
-      showModal(isRtl ? 'تم التحديث' : 'Updated', isRtl ? 'تم حفظ التغييرات بنجاح' : 'Changes saved successfully', 'emerald');
+      await checkApiKeyStatus(appConfig);
+      showModal(isRtl ? 'تم التحديث' : 'Updated', isRtl ? 'تم حفظ المفتاح وتفعيل محرك البحث بنجاح' : 'Key saved and Search Engine activated successfully', 'emerald');
     } catch (e) {
       showModal(isRtl ? 'خطأ' : 'Error', "Error saving settings", 'rose');
     } finally {
@@ -483,6 +489,21 @@ export const AdminPanel: React.FC<Props> = ({ lang }) => {
                  <h2 className="text-2xl font-black text-slate-900">{isRtl ? 'ربط محرك البحث والـ API' : 'Search Engine & API Integration'}</h2>
                  <p className="text-slate-400 font-bold text-sm mt-3">{isRtl ? 'تحكم في مفاتيح الربط لتشغيل موديل Gemini 3 Pro المتقدم' : 'Manage your connection keys for the Gemini 3 Pro model'}</p>
               </div>
+              <div className="p-6 bg-slate-900 rounded-[2rem] border border-slate-800 space-y-4">
+                 <div className="flex justify-between items-center">
+                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">{isRtl ? 'مفتاح Gemini API (تخزين قواعد البيانات)' : 'Gemini API Key (Database Storage)'}</label>
+                   {appConfig.geminiApiKey && (<span className="text-[9px] font-black text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded border border-emerald-400/20">{isRtl ? 'مخزن' : 'STORED'}</span>)}
+                 </div>
+                 <div className="relative">
+                    <input type={showRawKey ? "text" : "password"} value={appConfig.geminiApiKey || ''} onChange={(e) => setAppConfig({...appConfig, geminiApiKey: e.target.value})} className="w-full px-5 py-4 bg-slate-800 border border-slate-700 rounded-xl font-mono text-xs text-blue-400 outline-none focus:border-blue-500 transition-all" placeholder="AIzaSy..." />
+                    <button onClick={() => setShowRawKey(!showRawKey)} className="absolute inset-y-0 end-0 px-4 text-slate-500 hover:text-white transition-colors">
+                      {showRawKey ? (<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" /></svg>) : (<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268-2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>)}
+                    </button>
+                 </div>
+                 <button onClick={handleSaveAppConfig} disabled={savingConfig} className="w-full bg-blue-600 text-white py-4 rounded-xl font-black text-sm hover:bg-blue-700 shadow-xl shadow-blue-900 transition-all active:scale-95 flex items-center justify-center gap-2">
+                   {savingConfig ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : (isRtl ? 'حفظ المفتاح في قاعدة البيانات' : 'Save Key to Database')}
+                 </button>
+              </div>
               <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100">
                  <div className="flex items-center justify-between mb-4">
                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{isRtl ? 'حالة النظام الإجمالية' : 'TOTAL SYSTEM STATUS'}</span>
@@ -493,7 +514,6 @@ export const AdminPanel: React.FC<Props> = ({ lang }) => {
                        <span className="text-[9px] font-bold text-slate-400">{isRtl ? 'رابط AI Studio الخارجي' : 'External AI Studio Link'}</span>
                        {(window as any).aistudio && (isKeyConnected) ? (<span className="text-[8px] font-black text-emerald-500">ACTIVE</span>) : (<span className="text-[8px] font-black text-slate-300">INACTIVE</span>)}
                     </div>
-                    {/* CRITICAL: Users must select their own API key via this dialog as per Veo/Pro instructions. */}
                     <button onClick={handleConnectKey} className="w-full bg-slate-900 text-white py-3 rounded-xl font-black text-xs hover:bg-slate-800 transition-all">{isRtl ? 'ربط / تحديث مفتاح AI Studio الخارجي' : 'Link / Update External AI Studio Key'}</button>
                  </div>
               </div>
@@ -516,7 +536,7 @@ export const AdminPanel: React.FC<Props> = ({ lang }) => {
              </div>
              <div className="flex justify-center mb-8">
                 <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200">
-                   <button onClick={() => setSettingsSubTab('AR')} className={`px-6 py-2 rounded-xl text-xs font-black transition-all ${settingsSubTab === 'AR' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-50'}`}>{isRtl ? 'العربية' : 'Arabic'}</button>
+                   <button onClick={() => setSettingsSubTab('AR')} className={`px-6 py-2 rounded-xl text-xs font-black transition-all ${settingsSubTab === 'AR' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500'}`}>{isRtl ? 'العربية' : 'Arabic'}</button>
                    <button onClick={() => setSettingsSubTab('EN')} className={`px-6 py-2 rounded-xl text-xs font-black transition-all ${settingsSubTab === 'EN' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500'}`}>{isRtl ? 'الإنجليزية' : 'English'}</button>
                    <button onClick={() => setSettingsSubTab('CORE')} className={`px-6 py-2 rounded-xl text-xs font-black transition-all ${settingsSubTab === 'CORE' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500'}`}>{isRtl ? 'الوسائط' : 'Branding'}</button>
                 </div>

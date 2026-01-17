@@ -4,6 +4,7 @@ export type PlanType = string;
 export type UserStatus = 'ACTIVE' | 'EXPIRED' | 'BANNED';
 
 export interface AppConfig {
+  geminiApiKey: string;
   googleSearchId?: string;
   siteNameAr?: string;
   siteNameEn?: string;

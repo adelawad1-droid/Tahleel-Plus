@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
 import { auth } from '../services/firebase';
-// Consolidate Firebase Auth imports to ensure all members are correctly resolved from the modular package.
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
