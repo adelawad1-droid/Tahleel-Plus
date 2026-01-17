@@ -216,6 +216,35 @@ export const AnalysisDashboard: React.FC<Props> = ({ data, lang, queryStr }) => 
         </div>
       </div>
 
+      {/* SOURCES SECTION - Required for Search Grounding compliance */}
+      {data.sources && data.sources.length > 0 && (
+        <div className="bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-sm print:shadow-none print:rounded-3xl print:border-slate-300">
+           <h3 className="text-2xl font-black mb-6 flex items-center gap-4">
+             <span className="w-3 h-10 bg-emerald-500 rounded-full print:bg-slate-900"></span>
+             {t.sourcesTitle}
+           </h3>
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {data.sources.map((src, i) => (
+                <a 
+                  key={i} 
+                  href={src.uri} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:border-blue-400 transition-all group flex items-start gap-3"
+                >
+                  <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-blue-600 shadow-sm shrink-0">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                  </div>
+                  <div className="overflow-hidden">
+                    <p className="text-sm font-bold text-slate-700 truncate group-hover:text-blue-600 transition-colors">{src.title}</p>
+                    <p className="text-[10px] text-slate-400 truncate">{src.uri}</p>
+                  </div>
+                </a>
+              ))}
+           </div>
+        </div>
+      )}
+
       <div className="bg-slate-900 p-12 rounded-[3rem] text-white shadow-2xl relative overflow-hidden print:bg-white print:text-slate-900 print:shadow-none print:border-2 print:border-slate-200 print:rounded-3xl">
         <h3 className="text-3xl font-black mb-10 flex items-center gap-4">
           <span className="w-3 h-10 bg-blue-500 rounded-full print:bg-slate-900"></span>
