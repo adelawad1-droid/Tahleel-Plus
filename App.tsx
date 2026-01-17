@@ -177,7 +177,7 @@ const App: React.FC = () => {
       
       {/* --- LIMIT REACHED MODAL --- */}
       {showLimitModal && (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 bg-slate-900/80 backdrop-blur-md animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-300">
            <div className="bg-white w-full max-w-xl rounded-[3rem] overflow-hidden shadow-2xl border border-slate-100 animate-in zoom-in duration-300 relative">
               <button 
                 onClick={() => setShowLimitModal(false)}
@@ -291,7 +291,7 @@ const App: React.FC = () => {
           }
         }} />}
         {view === 'LIBRARY' && user && <SavedLibrary lang={lang} />}
-        {view === 'PROFILE' && user && profile && <Profile profile={profile} lang={lang} onRefresh={() => refreshProfile(user.uid, user.email!)} />}
+        {view === 'PROFILE' && user && profile && <Profile profile={profile} plans={plans} lang={lang} onRefresh={() => refreshProfile(user.uid, user.email!)} />}
         {view === 'AUTH' && !user && <div className="py-12"><Auth lang={lang} /></div>}
         
         {view === 'HOME' && (

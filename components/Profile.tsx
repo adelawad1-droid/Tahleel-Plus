@@ -8,17 +8,18 @@ import {
   reauthenticateWithCredential, 
   EmailAuthProvider 
 } from 'firebase/auth';
-import { UserProfile, Language } from '../types';
+import { UserProfile, Language, PlanConfig } from '../types';
 import { TRANSLATIONS } from '../constants';
 import { updateUserDetails, deleteUserRecord } from '../services/userService';
 
 interface Props {
   profile: UserProfile;
+  plans: PlanConfig[];
   lang: Language;
   onRefresh: () => void;
 }
 
-export const Profile: React.FC<Props> = ({ profile, lang, onRefresh }) => {
+export const Profile: React.FC<Props> = ({ profile, plans, lang, onRefresh }) => {
   const [displayName, setDisplayName] = useState(profile.displayName || '');
   const [email, setEmail] = useState(profile.email);
   const [newPassword, setNewPassword] = useState('');
@@ -31,6 +32,12 @@ export const Profile: React.FC<Props> = ({ profile, lang, onRefresh }) => {
 
   const t = TRANSLATIONS[lang];
   const isRtl = lang === 'ar';
+
+  // Find plan details
+  const currentPlan = plans.find(p => p.id === profile.plan);
+  const searchLimit = currentPlan ? currentPlan.searchLimit : (profile.plan === 'ELITE' ? 99999 : 5);
+  const usagePercent = Math.min(100, (profile.searchCount / searchLimit) * 100);
+  const expiryDate = new Date(profile.expiryDate).toLocaleDateString(isRtl ? 'ar-SA' : 'en-US');
 
   const handleUpdateName = async () => {
     setLoading(true);
@@ -91,6 +98,8 @@ export const Profile: React.FC<Props> = ({ profile, lang, onRefresh }) => {
 
   return (
     <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      
+      {/* Profile Header */}
       <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-xl">
         <div className="flex items-center gap-6 mb-8 pb-8 border-b border-slate-50">
            <div className="w-20 h-20 bg-blue-600 rounded-3xl flex items-center justify-center text-white text-3xl font-black shadow-lg shadow-blue-100">
@@ -100,6 +109,38 @@ export const Profile: React.FC<Props> = ({ profile, lang, onRefresh }) => {
               <h2 className="text-2xl font-black text-slate-900">{t.profile}</h2>
               <p className="text-slate-400 font-bold text-sm">{profile.email}</p>
               <span className="inline-block mt-2 bg-blue-50 text-blue-600 text-[10px] font-black px-3 py-1 rounded-full border border-blue-100 uppercase tracking-widest">{profile.plan} PLAN</span>
+           </div>
+        </div>
+
+        {/* Subscription Info Card */}
+        <div className="mb-8 p-6 bg-slate-900 rounded-[2rem] text-white shadow-2xl relative overflow-hidden">
+           <div className="absolute top-0 right-0 p-4 opacity-10">
+              <svg className="w-24 h-24" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+           </div>
+           <div className="relative z-10">
+              <div className="flex justify-between items-center mb-6">
+                 <div>
+                    <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] mb-1">{isRtl ? 'الباقة الحالية' : 'Current Plan'}</p>
+                    <h3 className="text-2xl font-black">{currentPlan ? (isRtl ? currentPlan.nameAr : currentPlan.nameEn) : profile.plan}</h3>
+                 </div>
+                 <div className="text-right">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">{isRtl ? 'تاريخ الانتهاء' : 'Expiry Date'}</p>
+                    <p className="font-bold text-sm">{expiryDate}</p>
+                 </div>
+              </div>
+              
+              <div className="space-y-3">
+                 <div className="flex justify-between text-xs font-black">
+                    <span className="text-slate-400 uppercase tracking-widest">{isRtl ? 'استهلاك البحث' : 'Search Usage'}</span>
+                    <span>{profile.searchCount} / {profile.plan === 'ELITE' ? (isRtl ? 'غير محدود' : 'Unlimited') : searchLimit}</span>
+                 </div>
+                 <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full transition-all duration-1000 ${usagePercent > 80 ? 'bg-rose-500' : 'bg-blue-500'}`}
+                      style={{ width: `${usagePercent}%` }}
+                    ></div>
+                 </div>
+              </div>
            </div>
         </div>
 
