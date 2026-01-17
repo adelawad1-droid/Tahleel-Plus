@@ -108,4 +108,14 @@ export interface TranslationStrings {
   marketingSection: string;
   opsSection: string;
   strategySection: string;
+  login: string;
+  logout: string;
+  signup: string;
+  email: string;
+  password: string;
+  alreadyHaveAccount: string;
+  dontHaveAccount: string;
+  adminBadge: string;
+  welcome: string;
+  authRequired: string;
 }
