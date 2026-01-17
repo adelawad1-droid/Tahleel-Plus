@@ -17,6 +17,8 @@ import { Profile } from './components/Profile';
 
 type ViewMode = 'HOME' | 'ADMIN' | 'PRICING' | 'LIBRARY' | 'AUTH' | 'PROFILE';
 
+const GUEST_LIMIT = 3;
+
 const App: React.FC = () => {
   const [lang, setLang] = useState<Language>('ar');
   const [user, setUser] = useState<User | null>(null);
@@ -82,7 +84,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     loadInitialData();
-  }, [lang, view]); // Reload config when switching views (to catch admin updates)
+  }, [lang, view]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -116,6 +118,14 @@ const App: React.FC = () => {
   const handleSearch = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!query.trim()) return;
+
+    // Enforcement logic
+    if (!user && guestSearchCount >= GUEST_LIMIT) {
+      setError(isRtl 
+        ? "لقد استنفدت تجاربك المجانية (3 عمليات بحث). يرجى تسجيل الدخول لمتابعة التحليل." 
+        : "You have reached the limit of free trials (3 searches). Please log in to continue.");
+      return;
+    }
     
     setLoading(true);
     setError(null);
@@ -123,7 +133,6 @@ const App: React.FC = () => {
     setLastSearchedQuery(query);
 
     try {
-      // Pass the API key from database if it exists
       const dbApiKey = appConfig?.geminiApiKey;
       const data = await analyzeEcommerceQuery(query, lang, dbApiKey);
       setResult(data);
@@ -169,6 +178,13 @@ const App: React.FC = () => {
           </button>
           
           <div className="flex items-center gap-4">
+            {!user && (
+              <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-amber-50 border border-amber-100 rounded-lg">
+                <span className="text-[10px] font-black text-amber-600 uppercase tracking-tight">
+                  {isRtl ? `التجارب المتبقية: ${GUEST_LIMIT - guestSearchCount}` : `Trials Left: ${GUEST_LIMIT - guestSearchCount}`}
+                </span>
+              </div>
+            )}
             {user && profile ? (
               <UserMenu profile={profile} lang={lang} onNavigate={setView} onLogout={() => signOut(auth)} />
             ) : (
@@ -209,8 +225,23 @@ const App: React.FC = () => {
 
             <div className={`transition-all duration-700 ${result || loading ? 'mb-8' : 'mb-16'}`}>
               {error && (
-                <div className="max-w-4xl mx-auto mb-8 p-6 bg-rose-50 border border-rose-200 rounded-[2rem] text-rose-700 shadow-sm animate-in zoom-in duration-300">
-                  <p className="text-lg font-black text-center">{error}</p>
+                <div className="max-w-4xl mx-auto mb-8 p-8 bg-rose-50 border border-rose-200 rounded-[2.5rem] text-rose-700 shadow-xl animate-in zoom-in duration-300">
+                  <div className="flex flex-col items-center text-center gap-4">
+                    <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center text-rose-600">
+                      <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                    </div>
+                    <div>
+                      <p className="text-lg font-black mb-4">{error}</p>
+                      {!user && guestSearchCount >= GUEST_LIMIT && (
+                        <button 
+                          onClick={() => setView('AUTH')}
+                          className="bg-slate-900 text-white px-8 py-3 rounded-2xl font-black text-sm hover:bg-blue-600 transition-all shadow-lg"
+                        >
+                          {t.signup}
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -228,7 +259,7 @@ const App: React.FC = () => {
                   />
                 </div>
                 <button 
-                  disabled={loading} 
+                  disabled={loading || (!user && guestSearchCount >= GUEST_LIMIT)} 
                   className="bg-blue-600 text-white px-12 py-6 rounded-[1.8rem] font-black text-lg hover:bg-blue-700 hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-blue-200 disabled:opacity-50 min-w-[220px]"
                 >
                   {loading ? '...' : t.searchBtn}
