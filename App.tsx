@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { User, onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from './services/firebase';
 import { AnalysisResult, Language, UserProfile, PlanConfig, AppConfig } from './types';
-import { TRANSLATIONS } from './constants';
+import { TRANSLATIONS, LOADING_MESSAGES } from './constants';
 import { analyzeEcommerceQuery } from './services/geminiService';
 import { syncUserProfile, incrementSearchCount, handleStripeReturn, getPlanConfigs, getAppConfig } from './services/userService';
 import { LanguageToggle } from './components/LanguageToggle';
@@ -36,12 +35,26 @@ const App: React.FC = () => {
   const [query, setQuery] = useState('');
   const [lastSearchedQuery, setLastSearchedQuery] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadingStep, setLoadingStep] = useState(0);
   const [authLoading, setAuthLoading] = useState(true);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showLimitModal, setShowLimitModal] = useState(false);
 
   const t = TRANSLATIONS[lang];
   const isRtl = lang === 'ar';
+
+  // Dynamic loading messages logic
+  useEffect(() => {
+    let interval: any;
+    if (loading) {
+      setLoadingStep(0);
+      interval = setInterval(() => {
+        setLoadingStep(prev => (prev < LOADING_MESSAGES[lang].length - 1 ? prev + 1 : prev));
+      }, 4000);
+    }
+    return () => clearInterval(interval);
+  }, [loading, lang]);
 
   useEffect(() => {
     localStorage.setItem('guest_search_count', guestSearchCount.toString());
@@ -98,6 +111,7 @@ const App: React.FC = () => {
         await refreshProfile(currentUser.uid, currentUser.email!);
         setView('HOME');
         setError(null);
+        setShowLimitModal(false);
       } else {
         setUser(null);
         setProfile(null);
@@ -119,11 +133,8 @@ const App: React.FC = () => {
     if (e) e.preventDefault();
     if (!query.trim()) return;
 
-    // Enforcement logic
     if (!user && guestSearchCount >= GUEST_LIMIT) {
-      setError(isRtl 
-        ? "لقد استنفدت تجاربك المجانية (3 عمليات بحث). يرجى تسجيل الدخول لمتابعة التحليل." 
-        : "You have reached the limit of free trials (3 searches). Please log in to continue.");
+      setShowLimitModal(true);
       return;
     }
     
@@ -161,14 +172,74 @@ const App: React.FC = () => {
 
   return (
     <div className={`min-h-screen flex flex-col bg-slate-50 font-['Cairo']`} dir={isRtl ? 'rtl' : 'ltr'}>
+      
+      {/* --- LIMIT REACHED MODAL --- */}
+      {showLimitModal && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 bg-slate-900/80 backdrop-blur-md animate-in fade-in duration-300">
+           <div className="bg-white w-full max-w-xl rounded-[3rem] overflow-hidden shadow-2xl border border-slate-100 animate-in zoom-in duration-500 relative">
+              <button 
+                onClick={() => setShowLimitModal(false)}
+                className="absolute top-8 end-8 w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+              
+              <div className="p-12 text-center">
+                 <div className="w-24 h-24 bg-amber-50 text-amber-500 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-inner">
+                    <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                 </div>
+                 
+                 <h3 className="text-3xl font-black text-slate-900 mb-4">
+                   {isRtl ? 'انتهت تجاربك المجانية' : 'Free Trials Ended'}
+                 </h3>
+                 <p className="text-lg text-slate-500 font-medium mb-10 leading-relaxed">
+                   {isRtl 
+                    ? 'لقد استهلكت جميع المحاولات المتاحة للزوار (3 عمليات بحث). اشترك الآن للحصول على تحليلات غير محدودة ودقيقة للسوق السعودي.' 
+                    : 'You have used all guest trials (3 searches). Subscribe now for unlimited deep strategic analysis for the Saudi market.'}
+                 </p>
+                 
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <button 
+                      onClick={() => setView('AUTH')}
+                      className="bg-blue-600 text-white py-5 rounded-2xl font-black text-lg hover:bg-blue-700 shadow-xl shadow-blue-100 transition-all active:scale-95"
+                    >
+                      {t.signup}
+                    </button>
+                    <button 
+                      onClick={() => { setShowLimitModal(false); setView('PRICING'); }}
+                      className="bg-slate-900 text-white py-5 rounded-2xl font-black text-lg hover:bg-slate-800 shadow-xl shadow-slate-200 transition-all active:scale-95"
+                    >
+                      {isRtl ? 'مشاهدة الباقات' : 'View Plans'}
+                    </button>
+                 </div>
+                 
+                 <button 
+                   onClick={() => setShowLimitModal(false)}
+                   className="mt-8 text-sm font-bold text-slate-400 hover:text-slate-600"
+                 >
+                   {isRtl ? 'إغلاق والعودة' : 'Close and return'}
+                 </button>
+              </div>
+              
+              <div className="bg-slate-50 p-6 text-center border-t border-slate-100">
+                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                   {isRtl ? 'انضم لأكثر من 1000 تاجر في تحليل بلس' : 'Join 1000+ Merchants on Tahleel Plus'}
+                 </p>
+              </div>
+           </div>
+        </div>
+      )}
+
       <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-slate-200 px-6 py-4 shadow-sm">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <button onClick={handleReset} className="flex items-center gap-3 group">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200 group-hover:rotate-6 transition-all overflow-hidden">
+            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200 group-hover:rotate-6 transition-all overflow-hidden text-white">
               {appConfig?.siteLogo ? (
                 <img src={appConfig.siteLogo} alt="Logo" className="w-full h-full object-cover" />
               ) : (
-                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
               )}
             </div>
             <div className="hidden sm:block text-right">
@@ -181,7 +252,7 @@ const App: React.FC = () => {
             {!user && (
               <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-amber-50 border border-amber-100 rounded-lg">
                 <span className="text-[10px] font-black text-amber-600 uppercase tracking-tight">
-                  {isRtl ? `التجارب المتبقية: ${GUEST_LIMIT - guestSearchCount}` : `Trials Left: ${GUEST_LIMIT - guestSearchCount}`}
+                  {isRtl ? `التجارب المتبقية: ${Math.max(0, GUEST_LIMIT - guestSearchCount)}` : `Trials Left: ${Math.max(0, GUEST_LIMIT - guestSearchCount)}`}
                 </span>
               </div>
             )}
@@ -232,45 +303,75 @@ const App: React.FC = () => {
                     </div>
                     <div>
                       <p className="text-lg font-black mb-4">{error}</p>
-                      {!user && guestSearchCount >= GUEST_LIMIT && (
-                        <button 
-                          onClick={() => setView('AUTH')}
-                          className="bg-slate-900 text-white px-8 py-3 rounded-2xl font-black text-sm hover:bg-blue-600 transition-all shadow-lg"
-                        >
-                          {t.signup}
-                        </button>
-                      )}
                     </div>
                   </div>
                 </div>
               )}
 
-              <form onSubmit={handleSearch} className="max-w-6xl mx-auto flex flex-col md:flex-row gap-4 p-3 bg-white rounded-[2.5rem] border border-slate-200 shadow-2xl transition-all hover:border-blue-300 hover:shadow-blue-100">
+              <form onSubmit={handleSearch} className={`max-w-6xl mx-auto flex flex-col md:flex-row gap-4 p-3 bg-white rounded-[2.5rem] border border-slate-200 shadow-2xl transition-all ${!user && guestSearchCount >= GUEST_LIMIT ? 'opacity-50 grayscale select-none cursor-not-allowed' : 'hover:border-blue-300 hover:shadow-blue-100'}`}>
                 <div className="flex-1 relative">
                   <div className={`absolute inset-y-0 ${isRtl ? 'right-0 pr-7' : 'left-0 pl-7'} flex items-center text-blue-600`}>
                     <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                   </div>
                   <input 
                     type="text" 
+                    disabled={!user && guestSearchCount >= GUEST_LIMIT}
                     value={query} 
                     onChange={(e) => setQuery(e.target.value)} 
-                    placeholder={t.searchPlaceholder} 
-                    className={`w-full py-6 ${isRtl ? 'pr-16 pl-6' : 'pl-16 pr-6'} bg-transparent outline-none text-lg text-slate-900 placeholder:text-slate-300 font-bold`} 
+                    placeholder={!user && guestSearchCount >= GUEST_LIMIT ? (isRtl ? 'انتهت تجاربك.. سجل دخولك للمتابعة' : 'Trials ended.. login to continue') : t.searchPlaceholder} 
+                    className={`w-full py-6 ${isRtl ? 'pr-16 pl-6' : 'pl-16 pr-6'} bg-transparent outline-none text-lg text-slate-900 placeholder:text-slate-300 font-bold disabled:cursor-not-allowed`} 
                   />
                 </div>
                 <button 
-                  disabled={loading || (!user && guestSearchCount >= GUEST_LIMIT)} 
-                  className="bg-blue-600 text-white px-12 py-6 rounded-[1.8rem] font-black text-lg hover:bg-blue-700 hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-blue-200 disabled:opacity-50 min-w-[220px]"
+                  type="submit"
+                  className={`px-12 py-6 rounded-[1.8rem] font-black text-lg transition-all shadow-xl min-w-[220px] flex items-center justify-center gap-3
+                    ${!user && guestSearchCount >= GUEST_LIMIT 
+                      ? 'bg-slate-400 text-white cursor-pointer hover:bg-slate-500' 
+                      : 'bg-blue-600 text-white hover:bg-blue-700 hover:scale-[1.02] active:scale-95 shadow-blue-200'}
+                    ${loading ? 'opacity-50' : ''}
+                  `}
                 >
-                  {loading ? '...' : t.searchBtn}
+                  {loading ? (
+                    <div className="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  ) : (
+                    <>
+                      {!user && guestSearchCount >= GUEST_LIMIT && <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>}
+                      {!user && guestSearchCount >= GUEST_LIMIT ? (isRtl ? 'فتح المحرك' : 'Unlock Engine') : t.searchBtn}
+                    </>
+                  )}
                 </button>
               </form>
             </div>
 
             {loading && (
-              <div className="text-center py-24 animate-in fade-in duration-500">
-                <div className="w-28 h-28 border-8 border-blue-50 border-t-blue-600 rounded-full animate-spin mx-auto mb-10"></div>
-                <p className="text-3xl font-black text-slate-900 mb-3">{t.analyzing}</p>
+              <div className="text-center py-20 animate-in fade-in duration-500">
+                <div className="relative w-48 h-48 mx-auto mb-10 flex items-center justify-center">
+                   {/* Soft Glow Background */}
+                   <div className="absolute w-32 h-32 bg-blue-400/20 blur-3xl rounded-full animate-pulse"></div>
+                   
+                   {/* Centered Lamp Icon */}
+                   <svg className="w-24 h-24 text-blue-600 relative z-10 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.989-2.386l-.548-.547z" />
+                   </svg>
+                </div>
+
+                <div className="space-y-4 max-w-md mx-auto">
+                   <p className="text-2xl font-black text-slate-900 transition-all duration-500 h-16 flex items-center justify-center">
+                     {LOADING_MESSAGES[lang][loadingStep]}
+                   </p>
+                   
+                   {/* Progress Bar Container */}
+                   <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-blue-600 transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(37,99,235,0.4)]"
+                        style={{ width: `${((loadingStep + 1) / LOADING_MESSAGES[lang].length) * 100}%` }}
+                      ></div>
+                   </div>
+                   
+                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest animate-pulse">
+                     {isRtl ? 'قد يستغرق البحث العميق 10-15 ثانية' : 'Deep search may take 10-15 seconds'}
+                   </p>
+                </div>
               </div>
             )}
             {result && <AnalysisDashboard data={result} lang={lang} queryStr={lastSearchedQuery} />}

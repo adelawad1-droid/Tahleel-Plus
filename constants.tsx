@@ -145,3 +145,20 @@ export const TRANSLATIONS: Record<'ar' | 'en', TranslationStrings> = {
     }
   },
 };
+
+export const LOADING_MESSAGES = {
+  ar: [
+    "جاري مسح المتاجر السعودية (سلة، زد، نون)...",
+    "تحليل الأسعار المباشرة ومقارنة المنافسين...",
+    "فحص التوافق الثقافي والترند في المملكة...",
+    "حساب الهوامش الربحية وتوقعات المخاطر...",
+    "صياغة التوصية النهائية للاستثمار..."
+  ],
+  en: [
+    "Scanning Saudi stores (Salla, Zid, Noon)...",
+    "Analyzing live pricing and competitor mapping...",
+    "Evaluating cultural fit and KSA market trends...",
+    "Calculating profit margins and risk assessments...",
+    "Finalizing strategic investment verdict..."
+  ]
+};
