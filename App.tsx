@@ -82,7 +82,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     loadInitialData();
-  }, [lang]);
+  }, [lang, view]); // Reload config when switching views (to catch admin updates)
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -123,7 +123,9 @@ const App: React.FC = () => {
     setLastSearchedQuery(query);
 
     try {
-      const data = await analyzeEcommerceQuery(query, lang);
+      // Pass the API key from database if it exists
+      const dbApiKey = appConfig?.geminiApiKey;
+      const data = await analyzeEcommerceQuery(query, lang, dbApiKey);
       setResult(data);
       
       if (user) {

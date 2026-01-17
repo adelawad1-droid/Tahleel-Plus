@@ -44,7 +44,6 @@ export const AdminPanel: React.FC<Props> = ({ lang }) => {
   const [savingConfig, setSavingConfig] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
-  // Custom Modal State
   const [modal, setModal] = useState<ModalState>({
     isOpen: false,
     type: 'ALERT',
@@ -69,12 +68,20 @@ export const AdminPanel: React.FC<Props> = ({ lang }) => {
 
   const closeModal = () => setModal(prev => ({ ...prev, isOpen: false }));
 
-  const checkApiKeyStatus = async () => {
+  // تحديث: منطق فحص الحالة ليعتمد على قاعدة البيانات + AI Studio
+  const checkApiKeyStatus = async (currentConfig?: AppConfig) => {
     try {
+      const configToCheck = currentConfig || appConfig;
+      // التحقق من وجود مفتاح في قاعدة البيانات
+      const hasDbKey = !!configToCheck.geminiApiKey && configToCheck.geminiApiKey.length > 10;
+      
+      // التحقق من الربط الخارجي
+      let hasStudioKey = false;
       if ((window as any).aistudio) {
-        const hasKey = await (window as any).aistudio.hasSelectedApiKey();
-        setIsKeyConnected(hasKey);
+        hasStudioKey = await (window as any).aistudio.hasSelectedApiKey();
       }
+      
+      setIsKeyConnected(hasDbKey || hasStudioKey);
     } catch (e) {
       console.error("Key Status Check Error:", e);
     }
@@ -91,8 +98,12 @@ export const AdminPanel: React.FC<Props> = ({ lang }) => {
       ]);
       setUsers(userData);
       setPlans(planData);
-      if (configData) setAppConfig(prev => ({ ...prev, ...configData }));
-      await checkApiKeyStatus();
+      if (configData) {
+        setAppConfig(prev => ({ ...prev, ...configData }));
+        await checkApiKeyStatus(configData);
+      } else {
+        await checkApiKeyStatus();
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -210,7 +221,9 @@ export const AdminPanel: React.FC<Props> = ({ lang }) => {
     setSavingConfig(true);
     try {
       await updateAppConfig(appConfig);
-      showModal(isRtl ? 'تم التحديث' : 'Updated', isRtl ? 'تم حفظ الإعدادات بنجاح في قاعدة البيانات' : 'Settings saved to database successfully', 'emerald');
+      // تحديث حالة الاتصال فوراً بعد الحفظ
+      await checkApiKeyStatus(appConfig);
+      showModal(isRtl ? 'تم التحديث' : 'Updated', isRtl ? 'تم حفظ المفتاح وتفعيل محرك البحث بنجاح' : 'Key saved and Search Engine activated successfully', 'emerald');
     } catch (e) {
       showModal(isRtl ? 'خطأ' : 'Error', "Error saving settings", 'rose');
     } finally {
@@ -410,7 +423,12 @@ export const AdminPanel: React.FC<Props> = ({ lang }) => {
 
               {/* Manual Key Storage Section */}
               <div className="p-6 bg-slate-900 rounded-[2rem] border border-slate-800 space-y-4">
-                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">{isRtl ? 'مفتاح Gemini API (تخزين قواعد البيانات)' : 'Gemini API Key (Database Storage)'}</label>
+                 <div className="flex justify-between items-center">
+                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">{isRtl ? 'مفتاح Gemini API (تخزين قواعد البيانات)' : 'Gemini API Key (Database Storage)'}</label>
+                   {appConfig.geminiApiKey && (
+                     <span className="text-[9px] font-black text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded border border-emerald-400/20">{isRtl ? 'مخزن' : 'STORED'}</span>
+                   )}
+                 </div>
                  <div className="relative">
                     <input 
                       type={showRawKey ? "text" : "password"}
@@ -441,25 +459,37 @@ export const AdminPanel: React.FC<Props> = ({ lang }) => {
 
               <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100">
                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{isRtl ? 'حالة الاتصال عبر AI Studio' : 'AI STUDIO CONNECTION STATUS'}</span>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{isRtl ? 'حالة النظام الإجمالية' : 'TOTAL SYSTEM STATUS'}</span>
                     {isKeyConnected ? (
                       <span className="flex items-center gap-2 text-[10px] font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
                         <span className="w-1.5 h-1.5 bg-emerald-600 rounded-full animate-pulse"></span>
-                        {isRtl ? 'متصل ومفعل' : 'CONNECTED & ACTIVE'}
+                        {isRtl ? 'متصل وجاهز للتحليل' : 'CONNECTED & READY'}
                       </span>
                     ) : (
                       <span className="flex items-center gap-2 text-[10px] font-black text-rose-600 bg-rose-50 px-3 py-1 rounded-full border border-rose-100">
                         <span className="w-1.5 h-1.5 bg-rose-600 rounded-full"></span>
-                        {isRtl ? 'غير متصل' : 'NOT CONNECTED'}
+                        {isRtl ? 'غير متصل (يتطلب مفتاح)' : 'NOT CONNECTED'}
                       </span>
                     )}
                  </div>
-                 <button 
-                   onClick={handleConnectKey}
-                   className="w-full bg-slate-900 text-white py-4 rounded-xl font-black text-sm hover:bg-slate-800 transition-all"
-                 >
-                   {isRtl ? 'ربط / تحديث مفتاح AI Studio الخارجي' : 'Link / Update External AI Studio Key'}
-                 </button>
+                 
+                 <div className="mt-4 p-4 bg-white border border-slate-200 rounded-2xl">
+                    <div className="flex items-center justify-between mb-2">
+                       <span className="text-[9px] font-bold text-slate-400">{isRtl ? 'رابط AI Studio الخارجي' : 'External AI Studio Link'}</span>
+                       {/* التحقق من AI Studio فقط هنا */}
+                       {(window as any).aistudio && (isKeyConnected) ? (
+                         <span className="text-[8px] font-black text-emerald-500">ACTIVE</span>
+                       ) : (
+                         <span className="text-[8px] font-black text-slate-300">INACTIVE</span>
+                       )}
+                    </div>
+                    <button 
+                      onClick={handleConnectKey}
+                      className="w-full bg-slate-900 text-white py-3 rounded-xl font-black text-xs hover:bg-slate-800 transition-all"
+                    >
+                      {isRtl ? 'ربط / تحديث مفتاح AI Studio الخارجي' : 'Link / Update External AI Studio Key'}
+                    </button>
+                 </div>
               </div>
 
               <div className="text-center pt-4 border-t border-slate-50">

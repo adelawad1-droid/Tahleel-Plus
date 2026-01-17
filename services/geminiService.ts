@@ -126,20 +126,16 @@ const ANALYSIS_SCHEMA = {
   required: ["itemName", "category", "summary", "marketAnalysis", "marketingStrategy", "strategicAnalysis", "operationsFinancials", "finalVerdict", "marketStats", "competitors", "trends", "swot", "recommendations"],
 };
 
-export async function analyzeEcommerceQuery(query: string, lang: 'ar' | 'en'): Promise<AnalysisResult> {
-  /**
-   * Use process.env.API_KEY exclusively as per the Google GenAI coding guidelines.
-   * Assume this variable is pre-configured and accessible in the environment.
-   */
-  const apiKey = process.env.API_KEY;
+export async function analyzeEcommerceQuery(query: string, lang: 'ar' | 'en', customApiKey?: string): Promise<AnalysisResult> {
+  // Use customApiKey if provided (from DB), otherwise fallback to process.env.API_KEY
+  const apiKey = customApiKey || process.env.API_KEY;
 
   if (!apiKey) {
     throw new Error(lang === 'ar' 
-      ? "خطأ في الاتصال: لم يتم العثور على مفتاح API في البيئة." 
-      : "Connection Error: Gemini API Key is missing in the environment.");
+      ? "خطأ في الاتصال: لم يتم العثور على مفتاح API. يرجى ضبطه من لوحة التحكم." 
+      : "Connection Error: Gemini API Key is missing. Please set it in the Admin Panel.");
   }
 
-  // Always use { apiKey: ... } named parameter for initialization
   const ai = new GoogleGenAI({ apiKey });
   
   const systemInstruction = `
@@ -157,7 +153,6 @@ export async function analyzeEcommerceQuery(query: string, lang: 'ar' | 'en'): P
   `;
 
   try {
-    // Correct usage of generateContent with model name and prompt
     const response = await ai.models.generateContent({
       model: "gemini-3-pro-preview",
       contents: `Perform deep market analysis for: "${query}"`,
@@ -165,18 +160,15 @@ export async function analyzeEcommerceQuery(query: string, lang: 'ar' | 'en'): P
         systemInstruction,
         responseMimeType: "application/json",
         responseSchema: ANALYSIS_SCHEMA,
-        // Using googleSearch tool for grounding as requested
         tools: [{ googleSearch: {} }],
       },
     });
 
-    // Directly access the .text property from GenerateContentResponse
     const text = response.text;
     if (!text) throw new Error("Empty AI response");
 
     const result = JSON.parse(text) as AnalysisResult;
     
-    // Extract website URLs from grounding metadata if available
     const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
     if (groundingChunks) {
       result.sources = groundingChunks
@@ -192,11 +184,11 @@ export async function analyzeEcommerceQuery(query: string, lang: 'ar' | 'en'): P
     console.error("AI Service Error:", error);
     
     if (error.message?.includes("API_KEY_INVALID")) {
-      throw new Error(lang === 'ar' ? "مفتاح API غير صالح. يرجى التأكد من ضبط المفتاح بشكل صحيح." : "Invalid API Key. Please ensure the environment key is correct.");
+      throw new Error(lang === 'ar' ? "مفتاح API غير صالح. يرجى تحديثه من لوحة تحكم المشرف." : "Invalid API Key. Please update it in the Admin Dashboard.");
     }
     
     throw new Error(lang === 'ar' 
-      ? "فشل في إنشاء التقرير. تأكد من تفعيل خدمة الدفع في Google AI Studio وربط المفتاح." 
-      : "Failed to generate report. Ensure billing is enabled in Google AI Studio and the key is active.");
+      ? "فشل في إنشاء التقرير. تأكد من صلاحية مفتاح API المضاف في لوحة التحكم." 
+      : "Failed to generate report. Ensure the API key in settings is valid and has billing enabled.");
   }
 }
