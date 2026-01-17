@@ -254,26 +254,13 @@ const App: React.FC = () => {
         {view === 'HOME' && (
           <>
             {!result && !loading && (
-              <div className="text-center mb-16 animate-in fade-in slide-in-from-top-4 duration-1000">
+              <div className="text-center mb-10 animate-in fade-in slide-in-from-top-4 duration-1000">
                 <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-full text-xs font-black mb-6 border border-blue-100 shadow-sm">
                   <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-blue-600"></span></span>
                   {t.liveBadge}
                 </div>
                 <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-6 leading-tight">{activeSiteName}</h2>
                 <p className="text-xl text-slate-500 max-w-2xl mx-auto font-medium">{t.subtitle}</p>
-                
-                {!user && (
-                  <div className="mt-10 p-6 bg-white border border-blue-100 rounded-[2.5rem] shadow-xl shadow-blue-50 inline-flex flex-col items-center gap-2 border-dashed">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
-                      {isRtl ? 'جرب المحرك مجاناً (3 محاولات)' : 'Try Engine for Free (3 Attempts)'}
-                    </p>
-                    <div className="flex items-center gap-2 mt-1">
-                      {[1, 2, 3].map(i => (
-                        <div key={i} className={`w-12 h-2 rounded-full transition-all duration-700 ${i <= (3 - guestSearchCount) ? 'bg-blue-600 shadow-sm shadow-blue-200' : 'bg-slate-100'}`}></div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
             )}
 
@@ -297,7 +284,7 @@ const App: React.FC = () => {
                 </div>
               )}
 
-              <form onSubmit={handleSearch} className="max-w-4xl mx-auto flex flex-col md:flex-row gap-4 p-3 bg-white rounded-[2.5rem] border border-slate-200 shadow-2xl transition-all hover:border-blue-300 hover:shadow-blue-100">
+              <form onSubmit={handleSearch} className="max-w-6xl mx-auto flex flex-col md:flex-row gap-4 p-3 bg-white rounded-[2.5rem] border border-slate-200 shadow-2xl transition-all hover:border-blue-300 hover:shadow-blue-100">
                 <div className="flex-1 relative">
                   <div className={`absolute inset-y-0 ${isRtl ? 'right-0 pr-7' : 'left-0 pl-7'} flex items-center text-blue-600`}>
                     <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
