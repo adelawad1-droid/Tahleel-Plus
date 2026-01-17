@@ -2,8 +2,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { AnalysisResult } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
 const ANALYSIS_SCHEMA = {
   type: Type.OBJECT,
   properties: {
@@ -129,6 +127,9 @@ const ANALYSIS_SCHEMA = {
 };
 
 export async function analyzeEcommerceQuery(query: string, lang: 'ar' | 'en'): Promise<AnalysisResult> {
+  // Initialize AI instance inside the function to ensure the API key is available and fresh
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  
   const systemInstruction = `
     You are an elite Saudi market strategist and business consultant (Expert Level).
     Provide a hyper-professional data analysis for: "${query}".
