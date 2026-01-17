@@ -60,13 +60,6 @@ export const UserMenu: React.FC<Props> = ({ profile, lang, onNavigate, onLogout 
              {isRtl ? 'مكتبتي المحفوظة' : 'My Library'}
           </button>
 
-          <button onClick={() => { onNavigate('PRICING'); setIsOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-slate-700 hover:bg-blue-50 hover:text-blue-600 rounded-2xl transition-colors group">
-             <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
-               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
-             </div>
-             {isRtl ? 'إدارة الاشتراك' : 'Manage Plan'}
-          </button>
-
           {profile.isAdmin && (
             <button onClick={() => { onNavigate('ADMIN'); setIsOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-900 hover:text-white rounded-2xl transition-colors group">
               <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center group-hover:bg-slate-800 group-hover:text-white transition-colors">
