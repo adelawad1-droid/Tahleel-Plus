@@ -11,6 +11,29 @@
       body {
         font-family: 'Cairo', sans-serif;
       }
+      @media print {
+        body {
+          background-color: white !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        nav, footer, .no-print {
+          display: none !important;
+        }
+        main {
+          padding: 0 !important;
+          margin: 0 !important;
+          width: 100% !important;
+          max-width: 100% !important;
+        }
+        #root {
+          padding: 0 !important;
+        }
+        .recharts-responsive-container {
+          width: 100% !important;
+          height: 300px !important;
+        }
+      }
     </style>
   <script type="importmap">
 {

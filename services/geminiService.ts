@@ -1,6 +1,7 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 import { AnalysisResult } from "../types";
+import { getAppConfig } from "./userService";
 
 const ANALYSIS_SCHEMA = {
   type: Type.OBJECT,
@@ -127,8 +128,15 @@ const ANALYSIS_SCHEMA = {
 };
 
 export async function analyzeEcommerceQuery(query: string, lang: 'ar' | 'en'): Promise<AnalysisResult> {
-  // Initialize AI instance inside the function to ensure the API key is available and fresh
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  // Fetch API key from DB or fallback to process.env
+  const dbConfig = await getAppConfig();
+  const apiKey = dbConfig?.geminiApiKey || process.env.API_KEY;
+
+  if (!apiKey) {
+    throw new Error("AI API Key is not configured. Please contact the administrator.");
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
   
   const systemInstruction = `
     You are an elite Saudi market strategist and business consultant (Expert Level).

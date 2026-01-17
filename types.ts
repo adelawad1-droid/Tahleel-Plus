@@ -1,12 +1,51 @@
 
 export type Language = 'ar' | 'en';
+export type PlanType = string;
+export type UserStatus = 'ACTIVE' | 'EXPIRED' | 'BANNED';
+
+export interface AppConfig {
+  geminiApiKey: string;
+  googleSearchId?: string;
+  siteName?: string;
+  siteLogo?: string;
+  lastUpdated?: number;
+}
+
+export interface PlanConfig {
+  id: string;
+  nameAr: string;
+  nameEn: string;
+  price: number;
+  stripeUrl: string;
+  searchLimit: number;
+  featuresAr: string[];
+  featuresEn: string[];
+  isPopular?: boolean;
+}
+
+export interface UserProfile {
+  uid: string;
+  email: string;
+  plan: PlanType;
+  status: UserStatus;
+  createdAt: number;
+  expiryDate: number;
+  searchCount: number;
+  isAdmin?: boolean;
+}
+
+export interface SavedAnalysis {
+  id?: string;
+  userId: string;
+  timestamp: number;
+  query: string;
+  data: AnalysisResult;
+}
 
 export interface AnalysisResult {
   itemName: string;
   category: string;
   summary: string;
-  
-  // 1. Market & Demand
   marketAnalysis: {
     actualDemand: string;
     problemSolved: string;
@@ -15,28 +54,18 @@ export interface AnalysisResult {
     scalability: string;
     seasonalFactors: string;
   };
-
-  // 2. Audience & Marketing
   marketingStrategy: {
-    targetAudience: {
-      demographics: string;
-      behavior: string;
-      interests: string[];
-    };
+    targetAudience: { demographics: string; behavior: string; interests: string[]; };
     bestChannels: string[];
-    expectedCAC: string; // Customer Acquisition Cost
-    conversionKPIs: string; // ROAS, Conversion rates
+    expectedCAC: string;
+    conversionKPIs: string;
   };
-
-  // 3. Competitive & Strategic
   strategicAnalysis: {
     directCompetitors: string[];
-    usp: string; // Unique Selling Point
+    usp: string;
     saturationRisk: string;
     imitationRisk: string;
   };
-
-  // 4. Financial & Operations
   operationsFinancials: {
     pricingViability: string;
     expectedProfitMargins: string;
@@ -44,13 +73,10 @@ export interface AnalysisResult {
     recommendedPaymentMethods: string[];
     recommendedDelivery: string[];
   };
-
-  // 5. Final Verdict
   finalVerdict: {
     recommendation: 'GO' | 'NO-GO' | 'PROCEED WITH CAUTION';
     reasoning: string;
   };
-
   marketStats: {
     averagePrice: number;
     highestPrice: number;
@@ -66,17 +92,8 @@ export interface AnalysisResult {
     stockStatus: string;
     url: string;
   }>;
-  trends: Array<{
-    date: string;
-    price: number;
-    demand: number;
-  }>;
-  swot: {
-    strengths: string[];
-    weaknesses: string[];
-    opportunities: string[];
-    threats: string[];
-  };
+  trends: Array<{ date: string; price: number; demand: number; }>;
+  swot: { strengths: string[]; weaknesses: string[]; opportunities: string[]; threats: string[]; };
   recommendations: string[];
   sources?: Array<{ title: string; uri: string }>;
 }
@@ -118,4 +135,17 @@ export interface TranslationStrings {
   adminBadge: string;
   welcome: string;
   authRequired: string;
+  pricingTitle: string;
+  pricingSubtitle: string;
+  subscribeNow: string;
+  manageUsers: string;
+  userEmail: string;
+  userPlan: string;
+  userStatus: string;
+  actions: string;
+  noAccess: string;
+  forgotPassword: string;
+  resetSent: string;
+  emailInUse: string;
+  wrongPassword: string;
 }
