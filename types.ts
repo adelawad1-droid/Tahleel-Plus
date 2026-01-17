@@ -56,7 +56,7 @@ export interface AnalysisResult {
   marketAnalysis: {
     actualDemand: string;
     problemSolved: string;
-    searchVolumeKSA: 'High' | 'Medium' | 'Low';
+    searchVolumeKSA: string;
     culturalCompatibility: string;
     scalability: string;
     seasonalFactors: string;
@@ -81,14 +81,14 @@ export interface AnalysisResult {
     recommendedDelivery: string[];
   };
   finalVerdict: {
-    recommendation: 'GO' | 'NO-GO' | 'PROCEED WITH CAUTION';
+    recommendation: string;
     reasoning: string;
   };
   marketStats: {
     averagePrice: number;
     highestPrice: number;
     lowestPrice: number;
-    demandLevel: 'High' | 'Medium' | 'Low';
+    demandLevel: string;
     marketSaturation: number;
   };
   competitors: Array<{
@@ -165,4 +165,7 @@ export interface TranslationStrings {
   deleteAccount: string;
   deleteAccountWarning: string;
   reauthRequired: string;
+  // Dynamic Mappings
+  verdicts: Record<string, string>;
+  levels: Record<string, string>;
 }

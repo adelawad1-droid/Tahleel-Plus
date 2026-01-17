@@ -62,6 +62,16 @@ export const TRANSLATIONS: Record<'ar' | 'en', TranslationStrings> = {
     deleteAccount: 'حذف الحساب نهائياً',
     deleteAccountWarning: '⚠️ تحذير: سيتم حذف كافة بياناتك وتقاريرك نهائياً. لا يمكن التراجع عن هذا الإجراء.',
     reauthRequired: 'يتطلب هذا الإجراء تسجيل الدخول مرة أخرى للأمان.',
+    verdicts: {
+      'GO': 'انطلق (فرصة استثمارية واعدة)',
+      'NO-GO': 'لا ينصح بالدخول (مخاطرة عالية)',
+      'PROCEED WITH CAUTION': 'تقدم بحذر (دراسة أعمق مطلوبة)'
+    },
+    levels: {
+      'High': 'مرتفع',
+      'Medium': 'متوسط',
+      'Low': 'منخفض'
+    }
   },
   en: {
     title: 'Tahleel Plus',
@@ -123,5 +133,15 @@ export const TRANSLATIONS: Record<'ar' | 'en', TranslationStrings> = {
     deleteAccount: 'Delete Account',
     deleteAccountWarning: '⚠️ Warning: All your data and reports will be permanently deleted. This action cannot be undone.',
     reauthRequired: 'This action requires you to re-authenticate for security.',
+    verdicts: {
+      'GO': 'GO (High Potential)',
+      'NO-GO': 'NO-GO (High Risk)',
+      'PROCEED WITH CAUTION': 'PROCEED WITH CAUTION'
+    },
+    levels: {
+      'High': 'High',
+      'Medium': 'Medium',
+      'Low': 'Low'
+    }
   },
 };

@@ -72,7 +72,17 @@ export const AnalysisDashboard: React.FC<Props> = ({ data, lang, queryStr }) => 
     'PROCEED WITH CAUTION': { bg: 'bg-amber-500', text: 'text-white' }
   };
 
-  const style = verdictStyles[data.finalVerdict.recommendation as keyof typeof verdictStyles] || { bg: 'bg-slate-800', text: 'text-white' };
+  // Safe mapping for verdict and levels
+  const rawVerdict = data.finalVerdict.recommendation;
+  const translatedVerdict = t.verdicts[rawVerdict] || rawVerdict;
+  
+  const rawDemand = data.marketStats.demandLevel;
+  const translatedDemand = t.levels[rawDemand] || rawDemand;
+
+  const rawVolume = data.marketAnalysis.searchVolumeKSA;
+  const translatedVolume = t.levels[rawVolume] || rawVolume;
+
+  const style = verdictStyles[rawVerdict as keyof typeof verdictStyles] || { bg: 'bg-slate-800', text: 'text-white' };
 
   return (
     <div className={`mt-8 space-y-8 animate-in fade-in duration-1000 ${isRtl ? 'text-right' : 'text-left'}`} dir={isRtl ? 'rtl' : 'ltr'}>
@@ -139,7 +149,7 @@ export const AnalysisDashboard: React.FC<Props> = ({ data, lang, queryStr }) => 
           </div>
           <div className="flex-1 text-center lg:text-start">
              <h2 className="text-xs font-black uppercase tracking-[0.3em] opacity-80 mb-1 print:text-slate-500">{t.verdictTitle}</h2>
-             <h3 className="text-4xl md:text-5xl font-black tracking-tight mb-4 print:text-blue-900">{data.finalVerdict.recommendation}</h3>
+             <h3 className="text-4xl md:text-5xl font-black tracking-tight mb-4 print:text-blue-900">{translatedVerdict}</h3>
              <p className="text-lg opacity-95 leading-relaxed font-medium italic print:text-slate-700">
               "{data.finalVerdict.reasoning}"
             </p>
@@ -155,7 +165,7 @@ export const AnalysisDashboard: React.FC<Props> = ({ data, lang, queryStr }) => 
         </div>
         <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm text-center print:border-slate-300">
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t.demand}</p>
-          <p className="text-2xl font-black text-slate-900">{data.marketStats.demandLevel}</p>
+          <p className="text-2xl font-black text-slate-900">{translatedDemand}</p>
         </div>
         <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm text-center print:border-slate-300">
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t.saturation}</p>
@@ -173,7 +183,7 @@ export const AnalysisDashboard: React.FC<Props> = ({ data, lang, queryStr }) => 
             <DataPoint label={isRtl ? "الحاجة الفعلية" : "Actual Demand"} value={data.marketAnalysis.actualDemand} />
             <DataPoint label={isRtl ? "المشكلة التي يحلها" : "Problem Solved"} value={data.marketAnalysis.problemSolved} />
             <DataPoint label={isRtl ? "التوافق الثقافي" : "Cultural Fit"} value={data.marketAnalysis.culturalCompatibility} />
-            <DataPoint label={isRtl ? "حجم البحث KSA" : "KSA Search Volume"} value={data.marketAnalysis.searchVolumeKSA} highlight />
+            <DataPoint label={isRtl ? "حجم البحث KSA" : "KSA Search Volume"} value={translatedVolume} highlight />
             <DataPoint label={isRtl ? "قابلية التوسع" : "Scalability"} value={data.marketAnalysis.scalability} />
             <DataPoint label={isRtl ? "عوامل موسمية" : "Seasonality"} value={data.marketAnalysis.seasonalFactors} />
           </div>
