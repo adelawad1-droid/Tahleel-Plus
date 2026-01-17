@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { auth } from '../services/firebase';
+// Fix: Use standard modular imports from firebase/auth
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,

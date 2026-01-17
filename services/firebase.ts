@@ -1,5 +1,6 @@
 
 import { initializeApp } from "firebase/app";
+// Fix: Ensure proper export from firebase/auth
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getAnalytics, isSupported } from "firebase/analytics";

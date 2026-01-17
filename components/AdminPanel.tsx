@@ -25,7 +25,6 @@ export const AdminPanel: React.FC<Props> = ({ lang }) => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [plans, setPlans] = useState<PlanConfig[]>([]);
   const [appConfig, setAppConfig] = useState<AppConfig>({ 
-    geminiApiKey: '', 
     siteNameAr: 'تحليل بلس', 
     siteNameEn: 'Tahleel Plus',
     siteLogo: '',
@@ -36,7 +35,6 @@ export const AdminPanel: React.FC<Props> = ({ lang }) => {
     siteKeywordsEn: ''
   });
   const [isKeyConnected, setIsKeyConnected] = useState<boolean | null>(null);
-  const [showRawKey, setShowRawKey] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -68,20 +66,14 @@ export const AdminPanel: React.FC<Props> = ({ lang }) => {
 
   const closeModal = () => setModal(prev => ({ ...prev, isOpen: false }));
 
-  // تحديث: منطق فحص الحالة ليعتمد على قاعدة البيانات + AI Studio
-  const checkApiKeyStatus = async (currentConfig?: AppConfig) => {
+  const checkApiKeyStatus = async () => {
     try {
-      const configToCheck = currentConfig || appConfig;
-      // التحقق من وجود مفتاح في قاعدة البيانات
-      const hasDbKey = !!configToCheck.geminiApiKey && configToCheck.geminiApiKey.length > 10;
-      
-      // التحقق من الربط الخارجي
-      let hasStudioKey = false;
       if ((window as any).aistudio) {
-        hasStudioKey = await (window as any).aistudio.hasSelectedApiKey();
+        const hasKey = await (window as any).aistudio.hasSelectedApiKey();
+        setIsKeyConnected(hasKey);
+      } else {
+        setIsKeyConnected(false);
       }
-      
-      setIsKeyConnected(hasDbKey || hasStudioKey);
     } catch (e) {
       console.error("Key Status Check Error:", e);
     }
@@ -100,10 +92,8 @@ export const AdminPanel: React.FC<Props> = ({ lang }) => {
       setPlans(planData);
       if (configData) {
         setAppConfig(prev => ({ ...prev, ...configData }));
-        await checkApiKeyStatus(configData);
-      } else {
-        await checkApiKeyStatus();
       }
+      await checkApiKeyStatus();
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -169,6 +159,29 @@ export const AdminPanel: React.FC<Props> = ({ lang }) => {
     setPlans(newPlans);
   };
 
+  const handleUpdateFeature = (planIndex: number, lang: 'AR' | 'EN', featureIndex: number, value: string) => {
+    const newPlans = [...plans];
+    const field = lang === 'AR' ? 'featuresAr' : 'featuresEn';
+    const features = [...newPlans[planIndex][field]];
+    features[featureIndex] = value;
+    newPlans[planIndex] = { ...newPlans[planIndex], [field]: features };
+    setPlans(newPlans);
+  };
+
+  const handleAddFeature = (planIndex: number, lang: 'AR' | 'EN') => {
+    const newPlans = [...plans];
+    const field = lang === 'AR' ? 'featuresAr' : 'featuresEn';
+    newPlans[planIndex][field] = [...newPlans[planIndex][field], ""];
+    setPlans(newPlans);
+  };
+
+  const handleDeleteFeature = (planIndex: number, lang: 'AR' | 'EN', featureIndex: number) => {
+    const newPlans = [...plans];
+    const field = lang === 'AR' ? 'featuresAr' : 'featuresEn';
+    newPlans[planIndex][field] = newPlans[planIndex][field].filter((_, i) => i !== featureIndex);
+    setPlans(newPlans);
+  };
+
   const handleAddPlan = () => {
     const newPlan: PlanConfig = {
       id: `PLAN_${Date.now()}`,
@@ -221,9 +234,7 @@ export const AdminPanel: React.FC<Props> = ({ lang }) => {
     setSavingConfig(true);
     try {
       await updateAppConfig(appConfig);
-      // تحديث حالة الاتصال فوراً بعد الحفظ
-      await checkApiKeyStatus(appConfig);
-      showModal(isRtl ? 'تم التحديث' : 'Updated', isRtl ? 'تم حفظ المفتاح وتفعيل محرك البحث بنجاح' : 'Key saved and Search Engine activated successfully', 'emerald');
+      showModal(isRtl ? 'تم التحديث' : 'Updated', isRtl ? 'تم حفظ التغييرات بنجاح' : 'Changes saved successfully', 'emerald');
     } catch (e) {
       showModal(isRtl ? 'خطأ' : 'Error', "Error saving settings", 'rose');
     } finally {
@@ -261,8 +272,6 @@ export const AdminPanel: React.FC<Props> = ({ lang }) => {
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 space-y-8 pb-20">
-      
-      {/* --- CUSTOM MODAL --- */}
       {modal.isOpen && (
         <div className="fixed inset-0 z-[999] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="bg-white w-full max-w-md rounded-[2.5rem] overflow-hidden shadow-2xl border border-slate-100 animate-in zoom-in duration-300">
@@ -283,34 +292,14 @@ export const AdminPanel: React.FC<Props> = ({ lang }) => {
                 <h3 className="text-2xl font-black text-slate-900 mb-3">{modal.title}</h3>
                 <p className="text-slate-500 font-medium leading-relaxed">{modal.message}</p>
              </div>
-             
              <div className="flex border-t border-slate-50">
                 {modal.type === 'CONFIRM' ? (
                   <>
-                    <button 
-                      onClick={closeModal}
-                      className="flex-1 px-8 py-6 text-sm font-black text-slate-400 hover:bg-slate-50 transition-colors"
-                    >
-                      {isRtl ? 'إلغاء' : 'Cancel'}
-                    </button>
-                    <button 
-                      onClick={modal.onConfirm}
-                      className={`flex-1 px-8 py-6 text-sm font-black text-white transition-all
-                        ${modal.color === 'blue' ? 'bg-blue-600 hover:bg-blue-700' : ''}
-                        ${modal.color === 'rose' ? 'bg-rose-600 hover:bg-rose-700' : ''}
-                        ${modal.color === 'emerald' ? 'bg-emerald-600 hover:bg-emerald-700' : ''}
-                      `}
-                    >
-                      {isRtl ? 'تأكيد' : 'Confirm'}
-                    </button>
+                    <button onClick={closeModal} className="flex-1 px-8 py-6 text-sm font-black text-slate-400 hover:bg-slate-50 transition-colors">{isRtl ? 'إلغاء' : 'Cancel'}</button>
+                    <button onClick={modal.onConfirm} className={`flex-1 px-8 py-6 text-sm font-black text-white transition-all ${modal.color === 'blue' ? 'bg-blue-600 hover:bg-blue-700' : ''} ${modal.color === 'rose' ? 'bg-rose-600 hover:bg-rose-700' : ''} ${modal.color === 'emerald' ? 'bg-emerald-600 hover:bg-emerald-700' : ''}`}>{isRtl ? 'تأكيد' : 'Confirm'}</button>
                   </>
                 ) : (
-                  <button 
-                    onClick={closeModal}
-                    className="w-full px-8 py-6 text-sm font-black text-blue-600 hover:bg-blue-50 transition-colors"
-                  >
-                    {isRtl ? 'حسناً' : 'Okay'}
-                  </button>
+                  <button onClick={closeModal} className="w-full px-8 py-6 text-sm font-black text-blue-600 hover:bg-blue-50 transition-colors">{isRtl ? 'حسناً' : 'Okay'}</button>
                 )}
              </div>
           </div>
@@ -319,30 +308,10 @@ export const AdminPanel: React.FC<Props> = ({ lang }) => {
 
       <div className="flex flex-col md:flex-row justify-between items-center gap-6">
         <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200 overflow-x-auto max-w-full">
-          <button 
-            onClick={() => setActiveTab('USERS')}
-            className={`px-6 py-3 rounded-xl text-sm font-black transition-all shrink-0 ${activeTab === 'USERS' ? 'bg-white text-blue-600 shadow-lg' : 'text-slate-500 hover:text-slate-700'}`}
-          >
-            {isRtl ? 'المستفيدين' : 'Users'}
-          </button>
-          <button 
-            onClick={() => setActiveTab('PLANS')}
-            className={`px-6 py-3 rounded-xl text-sm font-black transition-all shrink-0 ${activeTab === 'PLANS' ? 'bg-white text-blue-600 shadow-lg' : 'text-slate-500 hover:text-slate-700'}`}
-          >
-            {isRtl ? 'الباقات' : 'Plans'}
-          </button>
-          <button 
-            onClick={() => setActiveTab('SITE_SETTINGS')}
-            className={`px-6 py-3 rounded-xl text-sm font-black transition-all shrink-0 ${activeTab === 'SITE_SETTINGS' ? 'bg-white text-blue-600 shadow-lg' : 'text-slate-500 hover:text-slate-700'}`}
-          >
-            {isRtl ? 'إعدادات الموقع' : 'Site Info'}
-          </button>
-          <button 
-            onClick={() => setActiveTab('SYSTEM')}
-            className={`px-6 py-3 rounded-xl text-sm font-black transition-all shrink-0 ${activeTab === 'SYSTEM' ? 'bg-white text-blue-600 shadow-lg' : 'text-slate-500 hover:text-slate-700'}`}
-          >
-            {isRtl ? 'النظام والربط' : 'System & API'}
-          </button>
+          <button onClick={() => setActiveTab('USERS')} className={`px-6 py-3 rounded-xl text-sm font-black transition-all shrink-0 ${activeTab === 'USERS' ? 'bg-white text-blue-600 shadow-lg' : 'text-slate-500 hover:text-slate-700'}`}>{isRtl ? 'المستفيدين' : 'Users'}</button>
+          <button onClick={() => setActiveTab('PLANS')} className={`px-6 py-3 rounded-xl text-sm font-black transition-all shrink-0 ${activeTab === 'PLANS' ? 'bg-white text-blue-600 shadow-lg' : 'text-slate-500 hover:text-slate-700'}`}>{isRtl ? 'الباقات' : 'Plans'}</button>
+          <button onClick={() => setActiveTab('SITE_SETTINGS')} className={`px-6 py-3 rounded-xl text-sm font-black transition-all shrink-0 ${activeTab === 'SITE_SETTINGS' ? 'bg-white text-blue-600 shadow-lg' : 'text-slate-500 hover:text-slate-700'}`}>{isRtl ? 'إعدادات الموقع' : 'Site Info'}</button>
+          <button onClick={() => setActiveTab('SYSTEM')} className={`px-6 py-3 rounded-xl text-sm font-black transition-all shrink-0 ${activeTab === 'SYSTEM' ? 'bg-white text-blue-600 shadow-lg' : 'text-slate-500 hover:text-slate-700'}`}>{isRtl ? 'النظام والربط' : 'System & API'}</button>
         </div>
       </div>
 
@@ -362,40 +331,25 @@ export const AdminPanel: React.FC<Props> = ({ lang }) => {
                 <tr key={u.uid} className={`hover:bg-blue-50/20 transition-colors ${actionLoadingId === u.uid ? 'opacity-50 pointer-events-none' : ''}`}>
                   <td className="px-8 py-6">
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white font-black text-sm group-hover:bg-blue-600 transition-colors">
-                        {u.email[0].toUpperCase()}
-                      </div>
+                      <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white font-black text-sm group-hover:bg-blue-600 transition-colors">{u.email[0].toUpperCase()}</div>
                       <div className="flex flex-col text-right">
                         <span className="font-bold text-slate-900">{u.email}</span>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className="bg-blue-50 text-blue-600 text-[10px] font-black px-2 py-0.5 rounded border border-blue-100 uppercase">
-                            {plans.find(p => p.id === u.plan) ? (isRtl ? plans.find(p => p.id === u.plan)?.nameAr : plans.find(p => p.id === u.plan)?.nameEn) : u.plan}
-                          </span>
+                          <span className="bg-blue-50 text-blue-600 text-[10px] font-black px-2 py-0.5 rounded border border-blue-100 uppercase">{plans.find(p => p.id === u.plan) ? (isRtl ? plans.find(p => p.id === u.plan)?.nameAr : plans.find(p => p.id === u.plan)?.nameEn) : u.plan}</span>
                           <span className="text-[10px] text-slate-400 font-bold">{u.searchCount} {isRtl ? 'بحث' : 'Searches'}</span>
                         </div>
                       </div>
                     </div>
                   </td>
                   <td className="px-8 py-6 text-center">
-                    <select 
-                      value={u.plan}
-                      onChange={(e) => handleUpdateUser(u.uid, e.target.value, u.status)}
-                      className="bg-white border border-slate-200 rounded-xl text-xs font-bold px-3 py-2 outline-none focus:border-blue-500 shadow-sm"
-                    >
+                    <select value={u.plan} onChange={(e) => handleUpdateUser(u.uid, e.target.value, u.status)} className="bg-white border border-slate-200 rounded-xl text-xs font-bold px-3 py-2 outline-none focus:border-blue-500 shadow-sm">
                       <option value="FREE">FREE</option>
-                      {plans.map(p => (
-                        <option key={p.id} value={p.id}>{isRtl ? p.nameAr : p.nameEn}</option>
-                      ))}
+                      {plans.map(p => (<option key={p.id} value={p.id}>{isRtl ? p.nameAr : p.nameEn}</option>))}
                       <option value="ELITE">ELITE</option>
                     </select>
                   </td>
                   <td className="px-8 py-6 text-center">
-                    <button 
-                      onClick={() => handleUpdateUser(u.uid, u.plan, u.status === 'ACTIVE' ? 'BANNED' : 'ACTIVE')}
-                      className={`text-[10px] font-black px-4 py-2 rounded-xl border transition-all ${u.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-rose-50 hover:text-rose-600' : 'bg-rose-50 text-rose-600 border-rose-100 hover:bg-emerald-50 hover:text-emerald-600'}`}
-                    >
-                      {u.status === 'ACTIVE' ? (isRtl ? 'إيقاف الحساب' : 'Suspend') : (isRtl ? 'تفعيل الحساب' : 'Activate')}
-                    </button>
+                    <button onClick={() => handleUpdateUser(u.uid, u.plan, u.status === 'ACTIVE' ? 'BANNED' : 'ACTIVE')} className={`text-[10px] font-black px-4 py-2 rounded-xl border transition-all ${u.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-rose-50 hover:text-rose-600' : 'bg-rose-50 text-rose-600 border-rose-100 hover:bg-emerald-50 hover:text-emerald-600'}`}>{u.status === 'ACTIVE' ? (isRtl ? 'إيقاف الحساب' : 'Suspend') : (isRtl ? 'تفعيل الحساب' : 'Activate')}</button>
                   </td>
                   <td className="px-8 py-6">
                     <div className="flex items-center justify-center gap-2">
@@ -410,6 +364,115 @@ export const AdminPanel: React.FC<Props> = ({ lang }) => {
         </div>
       )}
 
+      {activeTab === 'PLANS' && (
+        <div className="space-y-6">
+          <div className="flex justify-between items-center bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm">
+            <h2 className="text-xl font-black">{isRtl ? 'إدارة باقات الدفع' : 'Payment Plans Management'}</h2>
+            <div className="flex gap-4">
+              <button onClick={handleAddPlan} className="bg-emerald-50 text-emerald-600 px-6 py-3 rounded-2xl font-black border border-emerald-100 hover:bg-emerald-600 hover:text-white transition-all">+ {isRtl ? 'إضافة باقة' : 'Add Plan'}</button>
+              <button onClick={savePlans} className="bg-blue-600 text-white px-8 py-3 rounded-2xl font-black hover:bg-blue-700 transition-all shadow-xl">{isRtl ? 'حفظ التعديلات' : 'Save Changes'}</button>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-8">
+            {plans.map((plan, planIdx) => (
+              <div key={planIdx} className="bg-white p-8 rounded-[2.5rem] border border-slate-200 space-y-8 shadow-sm hover:border-blue-200 transition-all">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <label className="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">ID (PLAN NAME IN DB)</label>
+                    <input type="text" value={plan.id} onChange={(e) => handleUpdatePlanField(planIdx, 'id', e.target.value)} className="text-sm font-black text-blue-600 bg-blue-50 border border-blue-100 rounded-xl px-4 py-2 w-full outline-none" />
+                  </div>
+                  <button onClick={() => handleDeletePlan(planIdx)} className="p-3 text-rose-500 hover:bg-rose-50 rounded-xl transition-colors"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {/* Basic Info Column */}
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">NAME (AR)</label>
+                        <input type="text" value={plan.nameAr} onChange={(e) => handleUpdatePlanField(planIdx, 'nameAr', e.target.value)} className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none focus:border-blue-400 transition-all" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">NAME (EN)</label>
+                        <input type="text" value={plan.nameEn} onChange={(e) => handleUpdatePlanField(planIdx, 'nameEn', e.target.value)} className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none focus:border-blue-400 transition-all" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">PRICE (SAR)</label>
+                        <input type="number" value={plan.price} onChange={(e) => handleUpdatePlanField(planIdx, 'price', Number(e.target.value))} className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-sm font-black outline-none focus:border-blue-400 transition-all" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">SEARCH LIMIT</label>
+                        <input type="number" value={plan.searchLimit} onChange={(e) => handleUpdatePlanField(planIdx, 'searchLimit', Number(e.target.value))} className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-sm font-black outline-none focus:border-blue-400 transition-all" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black text-blue-600 mb-1 tracking-widest uppercase">STRIPE CHECKOUT URL</label>
+                      <input type="url" value={plan.stripeUrl} onChange={(e) => handleUpdatePlanField(planIdx, 'stripeUrl', e.target.value)} className="w-full px-4 py-3 bg-blue-50/30 border border-blue-100 rounded-xl text-[11px] font-mono text-blue-700 outline-none focus:border-blue-500" placeholder="https://buy.stripe.com/..." />
+                    </div>
+                    <div className="p-4 bg-slate-900 text-white rounded-[1.5rem] space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">{isRtl ? 'رابط العودة' : 'Required Success URL'}</span>
+                        <button onClick={() => copyToClipboard(getSuccessUrl(plan.id))} className="text-[8px] font-black bg-blue-600 px-3 py-1 rounded-full hover:bg-blue-700 transition-all">{isRtl ? 'نسخ' : 'Copy'}</button>
+                      </div>
+                      <p className="text-[9px] font-mono text-slate-300 break-all">{getSuccessUrl(plan.id)}</p>
+                    </div>
+                  </div>
+
+                  {/* Features Management Column */}
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Arabic Features */}
+                    <div className="space-y-2">
+                       <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">{isRtl ? 'المميزات (عربي)' : 'Features (AR)'}</label>
+                       <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                         {plan.featuresAr.map((feat, featIdx) => (
+                           <div key={featIdx} className="flex gap-2">
+                             <input 
+                               type="text" 
+                               value={feat} 
+                               onChange={(e) => handleUpdateFeature(planIdx, 'AR', featIdx, e.target.value)}
+                               className="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-bold outline-none focus:border-blue-400"
+                             />
+                             <button onClick={() => handleDeleteFeature(planIdx, 'AR', featIdx)} className="p-1.5 text-rose-400 hover:text-rose-600"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M6 18L18 6M6 6l12 12" /></svg></button>
+                           </div>
+                         ))}
+                       </div>
+                       <button onClick={() => handleAddFeature(planIdx, 'AR')} className="text-[10px] font-black text-emerald-600 hover:text-emerald-700 flex items-center gap-1 mt-2">
+                         <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M12 4v16m8-8H4" /></svg>
+                         {isRtl ? 'إضافة ميزة' : 'Add Feature'}
+                       </button>
+                    </div>
+
+                    {/* English Features */}
+                    <div className="space-y-2">
+                       <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Features (EN)</label>
+                       <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                         {plan.featuresEn.map((feat, featIdx) => (
+                           <div key={featIdx} className="flex gap-2">
+                             <input 
+                               type="text" 
+                               value={feat} 
+                               onChange={(e) => handleUpdateFeature(planIdx, 'EN', featIdx, e.target.value)}
+                               className="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-bold outline-none focus:border-blue-400"
+                             />
+                             <button onClick={() => handleDeleteFeature(planIdx, 'EN', featIdx)} className="p-1.5 text-rose-400 hover:text-rose-600"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M6 18L18 6M6 6l12 12" /></svg></button>
+                           </div>
+                         ))}
+                       </div>
+                       <button onClick={() => handleAddFeature(planIdx, 'EN')} className="text-[10px] font-black text-emerald-600 hover:text-emerald-700 flex items-center gap-1 mt-2">
+                         <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M12 4v16m8-8H4" /></svg>
+                         Add Feature
+                       </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {activeTab === 'SYSTEM' && (
         <div className="max-w-2xl mx-auto animate-in fade-in zoom-in duration-500">
            <div className="bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-xl space-y-8">
@@ -420,146 +483,24 @@ export const AdminPanel: React.FC<Props> = ({ lang }) => {
                  <h2 className="text-2xl font-black text-slate-900">{isRtl ? 'ربط محرك البحث والـ API' : 'Search Engine & API Integration'}</h2>
                  <p className="text-slate-400 font-bold text-sm mt-3">{isRtl ? 'تحكم في مفاتيح الربط لتشغيل موديل Gemini 3 Pro المتقدم' : 'Manage your connection keys for the Gemini 3 Pro model'}</p>
               </div>
-
-              {/* Manual Key Storage Section */}
-              <div className="p-6 bg-slate-900 rounded-[2rem] border border-slate-800 space-y-4">
-                 <div className="flex justify-between items-center">
-                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">{isRtl ? 'مفتاح Gemini API (تخزين قواعد البيانات)' : 'Gemini API Key (Database Storage)'}</label>
-                   {appConfig.geminiApiKey && (
-                     <span className="text-[9px] font-black text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded border border-emerald-400/20">{isRtl ? 'مخزن' : 'STORED'}</span>
-                   )}
-                 </div>
-                 <div className="relative">
-                    <input 
-                      type={showRawKey ? "text" : "password"}
-                      value={appConfig.geminiApiKey || ''}
-                      onChange={(e) => setAppConfig({...appConfig, geminiApiKey: e.target.value})}
-                      className="w-full px-5 py-4 bg-slate-800 border border-slate-700 rounded-xl font-mono text-xs text-blue-400 outline-none focus:border-blue-500 transition-all"
-                      placeholder="AIzaSy..."
-                    />
-                    <button 
-                      onClick={() => setShowRawKey(!showRawKey)}
-                      className="absolute inset-y-0 end-0 px-4 text-slate-500 hover:text-white transition-colors"
-                    >
-                      {showRawKey ? (
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" /></svg>
-                      ) : (
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                      )}
-                    </button>
-                 </div>
-                 <button 
-                   onClick={handleSaveAppConfig}
-                   disabled={savingConfig}
-                   className="w-full bg-blue-600 text-white py-4 rounded-xl font-black text-sm hover:bg-blue-700 shadow-xl shadow-blue-900 transition-all active:scale-95 flex items-center justify-center gap-2"
-                 >
-                   {savingConfig ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : (isRtl ? 'حفظ المفتاح في قاعدة البيانات' : 'Save Key to Database')}
-                 </button>
-              </div>
-
               <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100">
                  <div className="flex items-center justify-between mb-4">
                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{isRtl ? 'حالة النظام الإجمالية' : 'TOTAL SYSTEM STATUS'}</span>
-                    {isKeyConnected ? (
-                      <span className="flex items-center gap-2 text-[10px] font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
-                        <span className="w-1.5 h-1.5 bg-emerald-600 rounded-full animate-pulse"></span>
-                        {isRtl ? 'متصل وجاهز للتحليل' : 'CONNECTED & READY'}
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-2 text-[10px] font-black text-rose-600 bg-rose-50 px-3 py-1 rounded-full border border-rose-100">
-                        <span className="w-1.5 h-1.5 bg-rose-600 rounded-full"></span>
-                        {isRtl ? 'غير متصل (يتطلب مفتاح)' : 'NOT CONNECTED'}
-                      </span>
-                    )}
+                    {isKeyConnected ? (<span className="flex items-center gap-2 text-[10px] font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100"><span className="w-1.5 h-1.5 bg-emerald-600 rounded-full animate-pulse"></span>{isRtl ? 'متصل وجاهز للتحليل' : 'CONNECTED & READY'}</span>) : (<span className="flex items-center gap-2 text-[10px] font-black text-rose-600 bg-rose-50 px-3 py-1 rounded-full border border-rose-100"><span className="w-1.5 h-1.5 bg-rose-600 rounded-full"></span>{isRtl ? 'غير متصل (يتطلب مفتاح)' : 'NOT CONNECTED'}</span>)}
                  </div>
-                 
                  <div className="mt-4 p-4 bg-white border border-slate-200 rounded-2xl">
                     <div className="flex items-center justify-between mb-2">
                        <span className="text-[9px] font-bold text-slate-400">{isRtl ? 'رابط AI Studio الخارجي' : 'External AI Studio Link'}</span>
-                       {/* التحقق من AI Studio فقط هنا */}
-                       {(window as any).aistudio && (isKeyConnected) ? (
-                         <span className="text-[8px] font-black text-emerald-500">ACTIVE</span>
-                       ) : (
-                         <span className="text-[8px] font-black text-slate-300">INACTIVE</span>
-                       )}
+                       {(window as any).aistudio && (isKeyConnected) ? (<span className="text-[8px] font-black text-emerald-500">ACTIVE</span>) : (<span className="text-[8px] font-black text-slate-300">INACTIVE</span>)}
                     </div>
-                    <button 
-                      onClick={handleConnectKey}
-                      className="w-full bg-slate-900 text-white py-3 rounded-xl font-black text-xs hover:bg-slate-800 transition-all"
-                    >
-                      {isRtl ? 'ربط / تحديث مفتاح AI Studio الخارجي' : 'Link / Update External AI Studio Key'}
-                    </button>
+                    {/* CRITICAL: Users must select their own API key via this dialog as per Veo/Pro instructions. */}
+                    <button onClick={handleConnectKey} className="w-full bg-slate-900 text-white py-3 rounded-xl font-black text-xs hover:bg-slate-800 transition-all">{isRtl ? 'ربط / تحديث مفتاح AI Studio الخارجي' : 'Link / Update External AI Studio Key'}</button>
                  </div>
               </div>
-
               <div className="text-center pt-4 border-t border-slate-50">
-                 <a 
-                   href="https://ai.google.dev/gemini-api/docs/billing" 
-                   target="_blank" 
-                   rel="noopener noreferrer"
-                   className="text-[10px] font-black text-slate-400 hover:text-blue-600 transition-colors uppercase tracking-[0.2em]"
-                 >
-                   {isRtl ? 'توثيق الفوترة والدفع (Google Cloud)' : 'Billing Documentation (Google Cloud)'}
-                 </a>
+                 <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-[10px] font-black text-slate-400 hover:text-blue-600 transition-colors uppercase tracking-[0.2em]">{isRtl ? 'توثيق الفوترة والدفع (Google Cloud)' : 'Billing Documentation (Google Cloud)'}</a>
               </div>
            </div>
-        </div>
-      )}
-
-      {/* Remaining tabs (PLANS, SITE_SETTINGS) */}
-      {activeTab === 'PLANS' && (
-        <div className="space-y-6">
-          <div className="flex justify-between items-center bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm">
-            <h2 className="text-xl font-black">{isRtl ? 'إدارة باقات الدفع' : 'Payment Plans Management'}</h2>
-            <div className="flex gap-4">
-              <button onClick={handleAddPlan} className="bg-emerald-50 text-emerald-600 px-6 py-3 rounded-2xl font-black border border-emerald-100 hover:bg-emerald-600 hover:text-white transition-all">+ {isRtl ? 'إضافة باقة' : 'Add Plan'}</button>
-              <button onClick={savePlans} className="bg-blue-600 text-white px-8 py-3 rounded-2xl font-black hover:bg-blue-700 transition-all shadow-xl">{isRtl ? 'حفظ التعديلات' : 'Save Changes'}</button>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {plans.map((plan, index) => (
-              <div key={index} className="bg-white p-8 rounded-[2.5rem] border border-slate-200 space-y-6 shadow-sm hover:border-blue-200 transition-all">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <label className="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">ID (PLAN NAME IN DB)</label>
-                    <input type="text" value={plan.id} onChange={(e) => handleUpdatePlanField(index, 'id', e.target.value)} className="text-sm font-black text-blue-600 bg-blue-50 border border-blue-100 rounded-xl px-4 py-2 w-full outline-none" />
-                  </div>
-                  <button onClick={() => handleDeletePlan(index)} className="p-3 text-rose-500 hover:bg-rose-50 rounded-xl transition-colors"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">NAME (AR)</label>
-                    <input type="text" value={plan.nameAr} onChange={(e) => handleUpdatePlanField(index, 'nameAr', e.target.value)} className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none focus:border-blue-400 transition-all" />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">NAME (EN)</label>
-                    <input type="text" value={plan.nameEn} onChange={(e) => handleUpdatePlanField(index, 'nameEn', e.target.value)} className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none focus:border-blue-400 transition-all" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">PRICE (SAR)</label>
-                    <input type="number" value={plan.price} onChange={(e) => handleUpdatePlanField(index, 'price', Number(e.target.value))} className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-sm font-black outline-none focus:border-blue-400 transition-all" />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">SEARCH LIMIT</label>
-                    <input type="number" value={plan.searchLimit} onChange={(e) => handleUpdatePlanField(index, 'searchLimit', Number(e.target.value))} className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-sm font-black outline-none focus:border-blue-400 transition-all" />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-[10px] font-black text-blue-600 mb-1 tracking-widest uppercase">STRIPE CHECKOUT URL</label>
-                  <input type="url" value={plan.stripeUrl} onChange={(e) => handleUpdatePlanField(index, 'stripeUrl', e.target.value)} className="w-full px-4 py-3 bg-blue-50/30 border border-blue-100 rounded-xl text-[11px] font-mono text-blue-700 outline-none focus:border-blue-500" placeholder="https://buy.stripe.com/..." />
-                </div>
-                <div className="p-6 bg-slate-900 text-white rounded-[2rem] space-y-3">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{isRtl ? 'رابط العودة' : 'Required Success URL'}</span>
-                    <button onClick={() => copyToClipboard(getSuccessUrl(plan.id))} className="text-[10px] font-black bg-blue-600 px-4 py-1.5 rounded-full hover:bg-blue-700 transition-all">{isRtl ? 'نسخ الرابط' : 'Copy'}</button>
-                  </div>
-                  <p className="text-[10px] font-mono text-slate-300 break-all leading-relaxed">{getSuccessUrl(plan.id)}</p>
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
       )}
 
@@ -573,15 +514,13 @@ export const AdminPanel: React.FC<Props> = ({ lang }) => {
                 <h2 className="text-3xl font-black">{isRtl ? 'إعدادات هوية الموقع والـ SEO' : 'Site Branding & SEO Settings'}</h2>
                 <p className="text-slate-400 text-sm mt-3 font-medium">{isRtl ? 'تحكم في كيفية ظهور موقعك في المتصفح ومحركات البحث' : 'Manage how your site appears in browsers and search engines'}</p>
              </div>
-
              <div className="flex justify-center mb-8">
                 <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200">
-                   <button onClick={() => setSettingsSubTab('AR')} className={`px-6 py-2 rounded-xl text-xs font-black transition-all ${settingsSubTab === 'AR' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500'}`}>{isRtl ? 'العربية' : 'Arabic'}</button>
+                   <button onClick={() => setSettingsSubTab('AR')} className={`px-6 py-2 rounded-xl text-xs font-black transition-all ${settingsSubTab === 'AR' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-50'}`}>{isRtl ? 'العربية' : 'Arabic'}</button>
                    <button onClick={() => setSettingsSubTab('EN')} className={`px-6 py-2 rounded-xl text-xs font-black transition-all ${settingsSubTab === 'EN' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500'}`}>{isRtl ? 'الإنجليزية' : 'English'}</button>
                    <button onClick={() => setSettingsSubTab('CORE')} className={`px-6 py-2 rounded-xl text-xs font-black transition-all ${settingsSubTab === 'CORE' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500'}`}>{isRtl ? 'الوسائط' : 'Branding'}</button>
                 </div>
              </div>
-
              <div className="space-y-6">
                 {settingsSubTab === 'AR' && (
                   <div className="space-y-6 animate-in fade-in">
@@ -599,7 +538,6 @@ export const AdminPanel: React.FC<Props> = ({ lang }) => {
                     </div>
                   </div>
                 )}
-
                 {settingsSubTab === 'EN' && (
                   <div className="space-y-6 animate-in fade-in">
                     <div>
@@ -616,7 +554,6 @@ export const AdminPanel: React.FC<Props> = ({ lang }) => {
                     </div>
                   </div>
                 )}
-
                 {settingsSubTab === 'CORE' && (
                   <div className="space-y-6 animate-in fade-in">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -641,15 +578,8 @@ export const AdminPanel: React.FC<Props> = ({ lang }) => {
                     </div>
                   </div>
                 )}
-
                 <div className="pt-4">
-                  <button 
-                    onClick={handleSaveAppConfig}
-                    disabled={savingConfig}
-                    className="w-full bg-emerald-600 text-white py-5 rounded-[1.8rem] font-black text-lg hover:bg-emerald-700 hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-emerald-200 disabled:opacity-50"
-                  >
-                    {savingConfig ? <div className="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin mx-auto"></div> : (isRtl ? 'تحديث إعدادات الموقع' : 'Update Site Branding')}
-                  </button>
+                  <button onClick={handleSaveAppConfig} disabled={savingConfig} className="w-full bg-emerald-600 text-white py-5 rounded-[1.8rem] font-black text-lg hover:bg-emerald-700 hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-emerald-200 disabled:opacity-50">{savingConfig ? <div className="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin mx-auto"></div> : (isRtl ? 'تحديث إعدادات الموقع' : 'Update Site Branding')}</button>
                 </div>
              </div>
           </div>

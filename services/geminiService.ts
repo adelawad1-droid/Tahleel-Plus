@@ -126,16 +126,17 @@ const ANALYSIS_SCHEMA = {
   required: ["itemName", "category", "summary", "marketAnalysis", "marketingStrategy", "strategicAnalysis", "operationsFinancials", "finalVerdict", "marketStats", "competitors", "trends", "swot", "recommendations"],
 };
 
-export async function analyzeEcommerceQuery(query: string, lang: 'ar' | 'en', customApiKey?: string): Promise<AnalysisResult> {
-  // Use customApiKey if provided (from DB), otherwise fallback to process.env.API_KEY
-  const apiKey = customApiKey || process.env.API_KEY;
+export async function analyzeEcommerceQuery(query: string, lang: 'ar' | 'en'): Promise<AnalysisResult> {
+  // CRITICAL: Always use process.env.API_KEY directly as per guidelines.
+  const apiKey = process.env.API_KEY;
 
   if (!apiKey) {
     throw new Error(lang === 'ar' 
-      ? "خطأ في الاتصال: لم يتم العثور على مفتاح API. يرجى ضبطه من لوحة التحكم." 
-      : "Connection Error: Gemini API Key is missing. Please set it in the Admin Panel.");
+      ? "خطأ في الاتصال: لم يتم تحديد مفتاح API. يرجى اختيار مفتاح من لوحة التحكم." 
+      : "Connection Error: API Key is missing. Please select a key in the settings.");
   }
 
+  // CRITICAL: Create new instance right before the call to ensure latest key is used.
   const ai = new GoogleGenAI({ apiKey });
   
   const systemInstruction = `
@@ -153,6 +154,7 @@ export async function analyzeEcommerceQuery(query: string, lang: 'ar' | 'en', cu
   `;
 
   try {
+    // Model selection based on task and tool requirements.
     const response = await ai.models.generateContent({
       model: "gemini-3-pro-preview",
       contents: `Perform deep market analysis for: "${query}"`,
@@ -183,12 +185,15 @@ export async function analyzeEcommerceQuery(query: string, lang: 'ar' | 'en', cu
   } catch (error: any) {
     console.error("AI Service Error:", error);
     
-    if (error.message?.includes("API_KEY_INVALID")) {
-      throw new Error(lang === 'ar' ? "مفتاح API غير صالح. يرجى تحديثه من لوحة تحكم المشرف." : "Invalid API Key. Please update it in the Admin Dashboard.");
+    // Handling specific key selection errors as per Veo/Pro instructions.
+    if (error.message?.includes("Requested entity was not found.") || error.message?.includes("API_KEY_INVALID")) {
+      throw new Error(lang === 'ar' 
+        ? "تنبيه: يجب إعادة اختيار مفتاح API صالح ومفعل فيه الفوترة من إعدادات المشرف." 
+        : "Alert: Please re-select a valid API key with billing enabled in the Admin settings.");
     }
     
     throw new Error(lang === 'ar' 
-      ? "فشل في إنشاء التقرير. تأكد من صلاحية مفتاح API المضاف في لوحة التحكم." 
-      : "Failed to generate report. Ensure the API key in settings is valid and has billing enabled.");
+      ? "فشل في إنشاء التقرير. يرجى التأكد من اتصال الإنترنت وصلاحية مفتاح API." 
+      : "Failed to generate report. Please check your connection and API key validity.");
   }
 }

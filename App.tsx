@@ -1,6 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { User, onAuthStateChanged, signOut } from 'firebase/auth';
+// Fix: Properly import Firebase members and separate type from values
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import type { User } from 'firebase/auth';
 import { auth } from './services/firebase';
 import { AnalysisResult, Language, UserProfile, PlanConfig, AppConfig } from './types';
 import { TRANSLATIONS, LOADING_MESSAGES } from './constants';
@@ -81,9 +83,35 @@ const App: React.FC = () => {
     setAppConfig(configData);
     
     if (configData) {
+      // 1. Update Title
       const activeName = lang === 'ar' ? configData.siteNameAr : configData.siteNameEn;
       if (activeName) document.title = activeName;
       
+      // 2. Update Description Meta Tag
+      const activeDesc = lang === 'ar' ? configData.siteDescriptionAr : configData.siteDescriptionEn;
+      if (activeDesc) {
+        let metaDesc = document.querySelector('meta[name="description"]');
+        if (!metaDesc) {
+          metaDesc = document.createElement('meta');
+          (metaDesc as any).name = "description";
+          document.head.appendChild(metaDesc);
+        }
+        metaDesc.setAttribute('content', activeDesc);
+      }
+
+      // 3. Update Keywords Meta Tag
+      const activeKeywords = lang === 'ar' ? configData.siteKeywordsAr : configData.siteKeywordsEn;
+      if (activeKeywords) {
+        let metaKey = document.querySelector('meta[name="keywords"]');
+        if (!metaKey) {
+          metaKey = document.createElement('meta');
+          (metaKey as any).name = "keywords";
+          document.head.appendChild(metaKey);
+        }
+        metaKey.setAttribute('content', activeKeywords);
+      }
+      
+      // 4. Update Favicon
       if (configData.siteFavicon) {
         let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
         if (!link) {
@@ -140,14 +168,20 @@ const App: React.FC = () => {
       return;
     }
     
+    // Check if key is selected as per Gemini rules
+    if (window.aistudio && !(await window.aistudio.hasSelectedApiKey())) {
+      setError(isRtl ? "يرجى اختيار مفتاح API من لوحة التحكم أو القائمة العلوية للمتابعة." : "Please select an API Key from the settings or menu to proceed.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setResult(null);
     setLastSearchedQuery(query);
 
     try {
-      const dbApiKey = appConfig?.geminiApiKey;
-      const data = await analyzeEcommerceQuery(query, lang, dbApiKey);
+      // CRITICAL: Always use service which relies on process.env.API_KEY
+      const data = await analyzeEcommerceQuery(query, lang);
       setResult(data);
       
       if (user) {

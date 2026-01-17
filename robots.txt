@@ -1,0 +1,9 @@
+
+User-agent: *
+Allow: /
+Allow: /#PRICING
+Disallow: /#ADMIN
+Disallow: /#PROFILE
+Disallow: /#LIBRARY
+
+Sitemap: https://muhll-ca343.web.app/sitemap.xml
