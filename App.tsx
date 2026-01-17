@@ -1,8 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-// Fix: Properly import Firebase members and separate type from values
-import { onAuthStateChanged, signOut } from 'firebase/auth';
-import type { User } from 'firebase/auth';
+// Consolidated Firebase Auth imports to resolve member export resolution issues.
+import { onAuthStateChanged, signOut, type User } from 'firebase/auth';
 import { auth } from './services/firebase';
 import { AnalysisResult, Language, UserProfile, PlanConfig, AppConfig } from './types';
 import { TRANSLATIONS, LOADING_MESSAGES } from './constants';
@@ -223,7 +222,7 @@ const App: React.FC = () => {
               <div className="p-12 text-center">
                  <div className="w-24 h-24 bg-amber-50 text-amber-500 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-inner">
                     <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 00-2 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
                  </div>
                  
@@ -382,7 +381,7 @@ const App: React.FC = () => {
                     <div className="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
                   ) : (
                     <>
-                      {!user && guestSearchCount >= GUEST_LIMIT && <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>}
+                      {!user && guestSearchCount >= GUEST_LIMIT && <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 00-2 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>}
                       {!user && guestSearchCount >= GUEST_LIMIT ? (isRtl ? 'فتح المحرك' : 'Unlock Engine') : t.searchBtn}
                     </>
                   )}
@@ -430,9 +429,17 @@ const App: React.FC = () => {
         )}
       </main>
 
-      <footer className="w-full py-6 bg-white border-t border-slate-100 text-center text-slate-400 text-xs font-bold">
+      <footer className="w-full py-10 bg-white border-t border-slate-100 text-center">
         <div className="max-w-7xl mx-auto px-6">
-          <p>{activeSiteName} — {isRtl ? 'كافة الحقوق محفوظة' : 'All rights reserved'} © 2026</p>
+          {/* SEO Keyword Cloud - Subtle for indexers */}
+          <div className="mb-4 flex flex-wrap justify-center gap-x-3 gap-y-1 text-[9px] sm:text-[10px] font-bold text-slate-400 opacity-60 max-w-4xl mx-auto select-none">
+            <span>تحليل متاجر سلة</span> • <span>تحليل متاجر زد</span> • <span>تجارة الكترونية السعودية</span> • 
+            <span>دراسة جدوى منتجات</span> • <span>تحليل المنافسين</span> • <span>السوق السعودي 2025</span> • 
+            <span>المنتجات الأكثر مبيعاً</span> • <span>ذكاء الأعمال</span> • <span>تحليل بيانات سلة</span> • 
+            <span>توقعات الطلب</span> • <span>استراتيجية تسويق</span> • <span>تحليل نون وأمازون</span> • 
+            <span>فرص استثمارية</span> • <span>تحليل الجدوى الاقتصادية</span> • <span>رؤية 2030 تجارة</span>
+          </div>
+          <p className="text-xs font-bold text-slate-400">{activeSiteName} — {isRtl ? 'كافة الحقوق محفوظة' : 'All rights reserved'} © 2026</p>
         </div>
       </footer>
     </div>

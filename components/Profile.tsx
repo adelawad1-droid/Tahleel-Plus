@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { auth } from '../services/firebase';
-// Fix: Use proper modular imports from firebase/auth
+// Consolidate Firebase Auth modular imports and type declarations to ensure all members are correctly resolved.
 import { 
   updateEmail, 
   updatePassword, 
@@ -240,7 +240,7 @@ export const Profile: React.FC<Props> = ({ profile, plans, lang, onRefresh }) =>
       {/* Re-authentication Modal */}
       {showReauth && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
-           <div className="bg-white w-full max-w-md rounded-[2.5rem] overflow-hidden shadow-2xl border border-slate-100 animate-in zoom-in duration-300">
+           <div className="bg-white w-full max-md rounded-[2.5rem] overflow-hidden shadow-2xl border border-slate-100 animate-in zoom-in duration-300">
               <form onSubmit={handleReauthAndAction} className="p-10 space-y-6">
                  <div className="text-center">
                     <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
