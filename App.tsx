@@ -1,5 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { User, onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from './services/firebase';
 import { AnalysisResult, Language, UserProfile, PlanConfig, AppConfig } from './types';
@@ -14,8 +16,12 @@ import { AdminPanel } from './components/AdminPanel';
 import { UserMenu } from './components/UserMenu';
 import { SavedLibrary } from './components/SavedLibrary';
 import { Profile } from './components/Profile';
+import { PublicLibrary } from './components/PublicLibrary';
+import { SearchHistoryModal } from './components/SearchHistoryModal';
+import { RegionSelector } from './components/RegionSelector';
+import { SearchFeatures } from './components/SearchFeatures';
 
-type ViewMode = 'HOME' | 'ADMIN' | 'PRICING' | 'LIBRARY' | 'AUTH' | 'PROFILE';
+type ViewMode = 'HOME' | 'ADMIN' | 'PRICING' | 'LIBRARY' | 'PUBLIC_LIBRARY' | 'AUTH' | 'PROFILE';
 
 const GUEST_LIMIT = 3;
 
@@ -27,11 +33,50 @@ const App: React.FC = () => {
   const [appConfig, setAppConfig] = useState<AppConfig | null>(null);
   const [view, setView] = useState<ViewMode>('HOME');
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+    const location = useLocation();
+    const navigate = useNavigate();
+
+    const pathToView = (path: string): ViewMode => {
+      if (path.startsWith('/pricing')) return 'PRICING';
+      if (path.startsWith('/library')) return 'LIBRARY';
+      if (path.startsWith('/analysis-library')) return 'PUBLIC_LIBRARY';
+      if (path.startsWith('/auth')) return 'AUTH';
+      if (path.startsWith('/profile')) return 'PROFILE';
+      if (path.startsWith('/admin')) return 'ADMIN';
+      return 'HOME';
+    };
+
+    const viewToPath = (v: ViewMode): string => {
+      switch (v) {
+        case 'PRICING': return '/pricing';
+        case 'LIBRARY': return '/library';
+        case 'PUBLIC_LIBRARY': return '/analysis-library';
+        case 'AUTH': return '/auth';
+        case 'PROFILE': return '/profile';
+        case 'ADMIN': return '/admin';
+        default: return '/';
+      }
+    };
+
+    useEffect(() => {
+      setView(pathToView(location.pathname));
+    }, [location.pathname]);
+
   
   const [guestSearchCount, setGuestSearchCount] = useState<number>(() => {
     const saved = localStorage.getItem('guest_search_count');
     return saved ? parseInt(saved) : 0;
   });
+
+  const [guestRegion, setGuestRegion] = useState<string>(() => {
+    const saved = localStorage.getItem('guest_region');
+    return saved || 'SA';
+  });
+
+  // Gate free users after exceeding guest limit
+  const [showLimitModal, setShowLimitModal] = useState(false);
+  const [showSearchHistoryModal, setShowSearchHistoryModal] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const [query, setQuery] = useState('');
   const [lastSearchedQuery, setLastSearchedQuery] = useState('');
@@ -40,10 +85,23 @@ const App: React.FC = () => {
   const [authLoading, setAuthLoading] = useState(true);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [showLimitModal, setShowLimitModal] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   const t = TRANSLATIONS[lang];
   const isRtl = lang === 'ar';
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleSave = async () => {
+    try {
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (e) {
+      console.error('Save failed:', e);
+    }
+  };
 
   // Dynamic loading messages logic
   useEffect(() => {
@@ -123,8 +181,21 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
+    document.documentElement.lang = isRtl ? 'ar' : 'en';
+    document.documentElement.dir = isRtl ? 'rtl' : 'ltr';
     loadInitialData();
   }, [lang, view]);
+
+  // Update canonical link based on current path
+  useEffect(() => {
+    let canonical = document.querySelector("link[rel='canonical']") as HTMLLinkElement | null;
+    if (!canonical) {
+      canonical = document.createElement('link');
+      canonical.rel = 'canonical';
+      document.head.appendChild(canonical);
+    }
+    canonical.href = `${window.location.origin}${window.location.pathname}`;
+  }, [location.pathname]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -155,6 +226,13 @@ const App: React.FC = () => {
     setError(null);
     setLoading(false);
     setView('HOME');
+    navigate('/');
+  };
+
+  const handleUnlockEngine = () => {
+    if (!user && guestSearchCount >= GUEST_LIMIT) {
+      setShowSearchHistoryModal(true);
+    }
   };
 
   const handleSearch = async (e?: React.FormEvent) => {
@@ -173,7 +251,10 @@ const App: React.FC = () => {
 
     try {
       const dbApiKey = appConfig?.geminiApiKey;
-      const data = await analyzeEcommerceQuery(query, lang, dbApiKey);
+      const dbSearchKey = appConfig?.googleSearchApiKey;
+      const dbSearchId = appConfig?.googleSearchId;
+      const userRegion = user ? (profile?.region || 'SA') : guestRegion;
+      const data = await analyzeEcommerceQuery(query, lang, dbApiKey, dbSearchKey, dbSearchId, userRegion);
       setResult(data);
       
       if (user) {
@@ -198,107 +279,229 @@ const App: React.FC = () => {
 
   const activeSiteName = (lang === 'ar' ? appConfig?.siteNameAr : appConfig?.siteNameEn) || t.title;
 
+  // SEO Meta tags based on view
+  const getPageMeta = () => {
+    switch(view) {
+      case 'PRICING':
+        return {
+          title: lang === 'ar' ? 'الباقات والأسعار - تحليل بلس' : 'Pricing Plans - Tahleel Plus',
+          description: lang === 'ar' ? 'اختر الباقة المناسبة لك من باقات تحليل بلس لتحليل الأسواق بذكاء اصطناعي متقدم' : 'Choose your perfect plan from Tahleel Plus packages for global market analysis with advanced AI'
+        };
+      case 'LIBRARY':
+        return {
+          title: lang === 'ar' ? 'مكتبتي - تحليل بلس' : 'My Library - Tahleel Plus',
+          description: lang === 'ar' ? 'الوصول إلى جميع تحليلاتك المحفوظة في مكان واحد' : 'Access all your saved analyses in one place'
+        };
+      case 'PUBLIC_LIBRARY':
+        return {
+          title: lang === 'ar' ? 'مكتبة التحليلات - تحليل بلس' : 'Analysis Library - Tahleel Plus',
+          description: lang === 'ar' ? 'استكشف تحليلات السوق المنتقاة بعناية من فريق تحليل بلس لمختلف المنتجات والخدمات' : 'Explore curated market analyses from Tahleel Plus team for various products and services'
+        };
+      case 'AUTH':
+        return {
+          title: lang === 'ar' ? 'تسجيل الدخول - تحليل بلس' : 'Login - Tahleel Plus',
+          description: lang === 'ar' ? 'سجل دخولك لتبدأ رحلتك في تحليل الأسواق العالمية' : 'Login to start your global market analysis journey'
+        };
+      case 'PROFILE':
+        return {
+          title: lang === 'ar' ? 'ملفي الشخصي - تحليل بلس' : 'My Profile - Tahleel Plus',
+          description: lang === 'ar' ? 'إدارة حسابك وباقتك ومعلوماتك الشخصية' : 'Manage your account, plan and personal information'
+        };
+      case 'ADMIN':
+        return {
+          title: lang === 'ar' ? 'لوحة الإدارة - تحليل بلس' : 'Admin Panel - Tahleel Plus',
+          description: lang === 'ar' ? 'لوحة التحكم الكاملة لإدارة النظام' : 'Complete control panel for system management'
+        };
+      default:
+        return {
+          title: lang === 'ar' ? 'تحليل بلس - محرك تحليل الأسواق بالذكاء الاصطناعي' : 'Tahleel Plus - AI-Powered Market Analysis Engine',
+          description: lang === 'ar' ? 'اكتشف فرص التجارة الإلكترونية في أسواق متعددة بتحليل شامل يعتمد على الذكاء الاصطناعي المتقدم' : 'Discover e-commerce opportunities across global markets with comprehensive AI-powered analysis'
+        };
+    }
+  };
+
+  const pageMeta = getPageMeta();
+
   return (
     <div className={`min-h-screen flex flex-col bg-slate-50 font-['Cairo']`} dir={isRtl ? 'rtl' : 'ltr'}>
+      <Helmet>
+        <html lang={lang === 'ar' ? 'ar' : 'en'} dir={isRtl ? 'rtl' : 'ltr'} />
+        <title>{pageMeta.title}</title>
+        <meta name="description" content={pageMeta.description} />
+        <meta property="og:title" content={pageMeta.title} />
+        <meta property="og:description" content={pageMeta.description} />
+        <meta name="twitter:title" content={pageMeta.title} />
+        <meta name="twitter:description" content={pageMeta.description} />
+      </Helmet>
       
-      {/* --- LIMIT REACHED MODAL --- */}
-      {showLimitModal && (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-300">
-           <div className="bg-white w-full max-w-xl rounded-[3rem] overflow-hidden shadow-2xl border border-slate-100 animate-in zoom-in duration-300 relative">
-              <button 
-                onClick={() => setShowLimitModal(false)}
-                className="absolute top-8 end-8 w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all"
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
-              
-              <div className="p-12 text-center">
-                 <div className="w-24 h-24 bg-amber-50 text-amber-500 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-inner">
-                    <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
-                 </div>
-                 
-                 <h3 className="text-3xl font-black text-slate-900 mb-4">
-                   {isRtl ? 'انتهت تجاربك المجانية' : 'Free Trials Ended'}
-                 </h3>
-                 <p className="text-lg text-slate-500 font-medium mb-10 leading-relaxed">
-                   {isRtl 
-                    ? 'لقد استهلكت جميع المحاولات المتاحة للزوار (3 عمليات بحث). اشترك الآن للحصول على تحليلات غير محدودة ودقيقة للسوق السعودي.' 
-                    : 'You have used all guest trials (3 searches). Subscribe now for unlimited deep strategic analysis for the Saudi market.'}
-                 </p>
-                 
-                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <button 
-                      onClick={() => setView('AUTH')}
-                      className="bg-blue-600 text-white py-5 rounded-2xl font-black text-lg hover:bg-blue-700 shadow-xl shadow-blue-100 transition-all active:scale-95"
-                    >
-                      {t.signup}
-                    </button>
-                    <button 
-                      onClick={() => { setShowLimitModal(false); setView('PRICING'); }}
-                      className="bg-slate-900 text-white py-5 rounded-2xl font-black text-lg hover:bg-slate-800 shadow-xl shadow-slate-200 transition-all active:scale-95"
-                    >
-                      {isRtl ? 'مشاهدة الباقات' : 'View Plans'}
-                    </button>
-                 </div>
-                 
-                 <button 
-                   onClick={() => setShowLimitModal(false)}
-                   className="mt-8 text-sm font-bold text-slate-400 hover:text-slate-600"
-                 >
-                   {isRtl ? 'إغلاق والعودة' : 'Close and return'}
-                 </button>
-              </div>
-           </div>
-        </div>
-      )}
-
       <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-slate-200 px-6 py-4 shadow-sm">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-8">
+          <div className="flex items-center gap-3">
             <button onClick={handleReset} className="flex items-center gap-3 group">
               <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200 group-hover:rotate-6 transition-all overflow-hidden text-white">
                 {appConfig?.siteLogo ? (
-                  <img src={appConfig.siteLogo} alt="Logo" className="w-full h-full object-cover" />
+                  <img src={appConfig.siteLogo} alt={lang === 'ar' ? 'شعار الموقع' : 'Site Logo'} className="w-full h-full object-cover" loading="lazy" />
                 ) : (
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-label={lang === 'ar' ? 'أيقونة البحث' : 'Search Icon'}><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                 )}
               </div>
-              <div className="hidden sm:block text-right">
+              <div className="text-right">
                 <h1 className="text-xl font-black text-slate-900 leading-none">{activeSiteName}</h1>
-                {profile?.isAdmin && <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full mt-1 inline-block uppercase tracking-wider border border-blue-100">{t.adminBadge}</span>}
+                <p className="text-[10px] text-slate-500 mt-0.5">{isRtl ? 'قرارات مبنية على بيانات' : 'Data-Driven Decisions'}</p>
               </div>
             </button>
 
             {/* Public Pricing Link */}
             <button 
-              onClick={() => setView('PRICING')} 
+              onClick={() => { setView('PRICING'); navigate('/pricing'); }} 
               className={`hidden md:flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-black transition-all ${view === 'PRICING' ? 'text-blue-600 bg-blue-50' : 'text-slate-500 hover:text-blue-600 hover:bg-blue-50/50'}`}
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.1} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-label={lang === 'ar' ? 'أيقونة الباقات' : 'Pricing Icon'}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.1} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
               {t.pricingTitle}
             </button>
+
+            {/* Public Library Link */}
+            <button 
+              onClick={() => { setView('PUBLIC_LIBRARY'); navigate('/analysis-library'); }} 
+              className={`hidden md:flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-black transition-all ${view === 'PUBLIC_LIBRARY' ? 'text-blue-600 bg-blue-50' : 'text-slate-500 hover:text-blue-600 hover:bg-blue-50/50'}`}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-label={lang === 'ar' ? 'أيقونة مكتبة التحليلات' : 'Analysis Library Icon'}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.1} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" /></svg>
+              {isRtl ? 'مكتبة التحليلات' : 'Analysis Library'}
+            </button>
+
+            {/* Library Link - Only for logged in users */}
+            {user && profile && (
+              <button 
+                onClick={() => { setView('LIBRARY'); navigate('/library'); }} 
+                className={`hidden md:flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-black transition-all ${view === 'LIBRARY' ? 'text-blue-600 bg-blue-50' : 'text-slate-500 hover:text-blue-600 hover:bg-blue-50/50'}`}
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-label={lang === 'ar' ? 'أيقونة المكتبة' : 'Library Icon'}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.1} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
+                {isRtl ? 'مكتبتي' : 'My Library'}
+              </button>
+            )}
           </div>
           
           <div className="flex items-center gap-4">
-            {!user && (
-              <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-amber-50 border border-amber-100 rounded-lg">
-                <span className="text-[10px] font-black text-amber-600 uppercase tracking-tight">
-                  {isRtl ? `التجارب المتبقية: ${Math.max(0, GUEST_LIMIT - guestSearchCount)}` : `Trials Left: ${Math.max(0, GUEST_LIMIT - guestSearchCount)}`}
-                </span>
-              </div>
-            )}
-            {user && profile ? (
-              <UserMenu profile={profile} lang={lang} onNavigate={setView} onLogout={() => signOut(auth)} />
-            ) : (
-              <button onClick={() => setView('AUTH')} className="bg-slate-900 text-white px-6 py-2.5 rounded-xl text-sm font-black hover:bg-blue-600 transition-all shadow-lg shadow-slate-200">
-                {t.login}
-              </button>
-            )}
-            <LanguageToggle current={lang} onToggle={setLang} />
+            <div className="hidden md:flex items-center gap-4">
+              {!user && (
+                <div className="flex items-center gap-2 px-3 py-1 bg-amber-50 border border-amber-100 rounded-lg">
+                  <span className="text-[10px] font-black text-amber-600 uppercase tracking-tight">
+                    {isRtl ? `التجارب المتبقية: ${Math.max(0, GUEST_LIMIT - guestSearchCount)}` : `Trials Left: ${Math.max(0, GUEST_LIMIT - guestSearchCount)}`}
+                  </span>
+                </div>
+              )}
+              {user && profile ? (
+                <UserMenu profile={profile} lang={lang} plans={plans} onNavigate={(v) => { setView(v); navigate(viewToPath(v)); }} onLogout={() => signOut(auth)} />
+              ) : (
+                <button onClick={() => { setView('AUTH'); navigate('/auth'); }} className="bg-slate-900 text-white px-6 py-2.5 rounded-xl text-sm font-black hover:bg-blue-600 transition-all shadow-lg shadow-slate-200">
+                  {t.login}
+                </button>
+              )}
+              <LanguageToggle current={lang} onToggle={setLang} />
+            </div>
+
+            {/* Mobile Menu Button */}
+            <button 
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden w-10 h-10 flex items-center justify-center text-slate-600 hover:text-blue-600 transition-colors"
+              aria-label="Menu"
+            >
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
           </div>
         </div>
+
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <>
+            {/* Backdrop */}
+            <div 
+              className="fixed top-[73px] inset-x-0 bottom-0 bg-black/20 backdrop-blur-sm z-40 md:hidden"
+              onClick={() => setMobileMenuOpen(false)}
+            ></div>
+            
+            {/* Menu Panel */}
+            <div className="fixed top-[73px] end-0 w-72 bg-white border-s border-slate-200 shadow-2xl z-50 md:hidden max-h-[calc(100vh-73px)] overflow-y-auto rounded-es-3xl">
+              <div className="px-4 py-2 space-y-1">
+              <button 
+                onClick={() => { setView('PRICING'); navigate('/pricing'); setMobileMenuOpen(false); }} 
+                className={`w-full text-right px-4 py-2.5 rounded-xl text-sm font-black transition-all ${view === 'PRICING' ? 'text-blue-600 bg-blue-50' : 'text-slate-600 hover:bg-slate-50'}`}
+              >
+                {t.pricingTitle}
+              </button>
+              
+              <button 
+                onClick={() => { setView('PUBLIC_LIBRARY'); navigate('/analysis-library'); setMobileMenuOpen(false); }} 
+                className={`w-full text-right px-4 py-2.5 rounded-xl text-sm font-black transition-all ${view === 'PUBLIC_LIBRARY' ? 'text-blue-600 bg-blue-50' : 'text-slate-600 hover:bg-slate-50'}`}
+              >
+                {isRtl ? 'مكتبة التحليلات' : 'Analysis Library'}
+              </button>
+
+              {user && profile && (
+                <button 
+                  onClick={() => { setView('LIBRARY'); navigate('/library'); setMobileMenuOpen(false); }} 
+                  className={`w-full text-right px-4 py-2.5 rounded-xl text-sm font-black transition-all ${view === 'LIBRARY' ? 'text-blue-600 bg-blue-50' : 'text-slate-600 hover:bg-slate-50'}`}
+                >
+                  {isRtl ? 'مكتبتي' : 'My Library'}
+                </button>
+              )}
+
+              {/* User Section */}
+              {user && profile ? (
+                <>
+                  <button 
+                    onClick={() => { setView('PROFILE'); navigate('/profile'); setMobileMenuOpen(false); }} 
+                    className={`w-full text-right px-4 py-2.5 rounded-xl text-sm font-black transition-all ${view === 'PROFILE' ? 'text-blue-600 bg-blue-50' : 'text-slate-600 hover:bg-slate-50'}`}
+                  >
+                    {isRtl ? 'الملف الشخصي' : 'Profile'}
+                  </button>
+                  {profile.isAdmin && (
+                    <button 
+                      onClick={() => { setView('ADMIN'); navigate('/admin'); setMobileMenuOpen(false); }} 
+                      className={`w-full text-right px-4 py-2.5 rounded-xl text-sm font-black transition-all ${view === 'ADMIN' ? 'text-blue-600 bg-blue-50' : 'text-slate-600 hover:bg-slate-50'}`}
+                    >
+                      {isRtl ? 'لوحة التحكم' : 'Admin Panel'}
+                    </button>
+                  )}
+                  <button 
+                    onClick={() => { signOut(auth); setMobileMenuOpen(false); }} 
+                    className="w-full text-right px-4 py-2.5 rounded-xl text-sm font-black text-rose-600 hover:bg-rose-50 transition-all"
+                  >
+                    {isRtl ? 'تسجيل الخروج' : 'Logout'}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="px-4 py-2 bg-amber-50 border border-amber-100 rounded-lg">
+                    <span className="text-xs font-black text-amber-600">
+                      {isRtl ? `التجارب المتبقية: ${Math.max(0, GUEST_LIMIT - guestSearchCount)}` : `Trials Left: ${Math.max(0, GUEST_LIMIT - guestSearchCount)}`}
+                    </span>
+                  </div>
+                  <button 
+                    onClick={() => { setView('AUTH'); navigate('/auth'); setMobileMenuOpen(false); }} 
+                    className="w-full bg-slate-900 text-white px-6 py-2.5 rounded-xl text-sm font-black hover:bg-blue-600 transition-all"
+                  >
+                    {t.login}
+                  </button>
+                </>
+              )}
+
+              {/* Language Toggle */}
+              <button
+                onClick={() => { setLang(lang === 'ar' ? 'en' : 'ar'); }}
+                className="w-full text-right px-4 py-2.5 rounded-xl text-sm font-black text-slate-600 hover:bg-slate-50 transition-all flex items-center gap-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+                </svg>
+                {lang === 'ar' ? 'English' : 'العربية'}
+              </button>
+            </div>
+          </div>
+          </>
+        )}
       </nav>
 
       <main className="flex-grow max-w-7xl mx-auto w-full px-6 py-12">
@@ -312,33 +515,42 @@ const App: React.FC = () => {
         {view === 'PRICING' && <Pricing lang={lang} onSelect={(planId) => {
           if (!user && planId !== 'FREE') {
             setView('AUTH');
+            navigate('/auth');
           } else {
             setView('HOME');
+            navigate('/');
           }
         }} />}
         {view === 'LIBRARY' && user && <SavedLibrary lang={lang} />}
+        {view === 'PUBLIC_LIBRARY' && <PublicLibrary 
+          lang={lang} 
+          user={user}
+          onNavigateToAuth={() => {
+            setView('AUTH');
+            navigate('/auth');
+          }}
+        />}
         {view === 'PROFILE' && user && profile && <Profile profile={profile} plans={plans} lang={lang} onRefresh={() => refreshProfile(user.uid, user.email!)} />}
         {view === 'AUTH' && !user && <div className="py-12"><Auth lang={lang} /></div>}
         
         {view === 'HOME' && (
           <>
             {!result && !loading && (
-              <div className="text-center mb-10 animate-in fade-in slide-in-from-top-4 duration-1000">
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-full text-xs font-black mb-6 border border-blue-100 shadow-sm">
+              <div className="text-center mb-3 animate-in fade-in slide-in-from-top-4 duration-1000">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-full text-xs font-black mb-1.5 border border-blue-100 shadow-sm">
                   <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-blue-600"></span></span>
                   {t.liveBadge}
                 </div>
-                <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-6 leading-tight">{activeSiteName}</h2>
-                <p className="text-xl text-slate-500 max-w-2xl mx-auto font-medium">{t.subtitle}</p>
+                <p className="text-sm md:text-base text-slate-500 max-w-2xl mx-auto font-medium">{t.subtitle}</p>
               </div>
             )}
 
-            <div className={`transition-all duration-700 ${result || loading ? 'mb-8' : 'mb-16'}`}>
+            <div className={`transition-all duration-700 ${result || loading ? 'mb-8' : 'mb-6'}`}>
               {error && (
                 <div className="max-w-4xl mx-auto mb-8 p-8 bg-rose-50 border border-rose-200 rounded-[2.5rem] text-rose-700 shadow-xl animate-in zoom-in duration-300">
                   <div className="flex flex-col items-center text-center gap-4">
                     <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center text-rose-600">
-                      <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                      <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-label={lang === 'ar' ? 'أيقونة تحذير' : 'Warning Icon'}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                     </div>
                     <div>
                       <p className="text-lg font-black mb-4">{error}</p>
@@ -347,39 +559,73 @@ const App: React.FC = () => {
                 </div>
               )}
 
-              <form onSubmit={handleSearch} className={`max-w-6xl mx-auto flex flex-col md:flex-row gap-4 p-3 bg-white rounded-[2.5rem] border border-slate-200 shadow-2xl transition-all ${!user && guestSearchCount >= GUEST_LIMIT ? 'opacity-50 grayscale select-none cursor-not-allowed' : 'hover:border-blue-300 hover:shadow-blue-100'}`}>
-                <div className="flex-1 relative">
-                  <div className={`absolute inset-y-0 ${isRtl ? 'right-0 pr-7' : 'left-0 pl-7'} flex items-center text-blue-600`}>
-                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+              <form onSubmit={handleSearch} className={`max-w-6xl mx-auto ${!user && guestSearchCount >= GUEST_LIMIT ? 'opacity-50 grayscale select-none cursor-not-allowed' : ''}`}>
+                <div className="flex flex-col md:flex-row gap-3">
+                  {/* Search Input Box */}
+                  <div className="flex-1 relative">
+                    <div className={`absolute top-1/2 -translate-y-1/2 ${isRtl ? 'right-5' : 'left-5'} text-blue-600 pointer-events-none`}>
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-label={lang === 'ar' ? 'أيقونة البحث' : 'Search Icon'}><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    </div>
+                    <input 
+                      type="text" 
+                      disabled={!user && guestSearchCount >= GUEST_LIMIT}
+                      value={query} 
+                      onChange={(e) => setQuery(e.target.value)} 
+                      placeholder={!user && guestSearchCount >= GUEST_LIMIT ? (isRtl ? 'انتهت تجاربك.. سجل دخولك للمتابعة' : 'Trials ended.. login to continue') : t.searchPlaceholder} 
+                      className={`w-full ${isRtl ? 'pr-14 pl-5' : 'pl-14 pr-5'} py-4 bg-white border border-slate-200 rounded-2xl outline-none text-base text-slate-900 placeholder:text-slate-400 font-bold disabled:cursor-not-allowed shadow-sm transition-all hover:border-blue-300 hover:shadow-md focus:border-blue-500 focus:shadow-lg`} 
+                    />
                   </div>
-                  <input 
-                    type="text" 
-                    disabled={!user && guestSearchCount >= GUEST_LIMIT}
-                    value={query} 
-                    onChange={(e) => setQuery(e.target.value)} 
-                    placeholder={!user && guestSearchCount >= GUEST_LIMIT ? (isRtl ? 'انتهت تجاربك.. سجل دخولك للمتابعة' : 'Trials ended.. login to continue') : t.searchPlaceholder} 
-                    className={`w-full py-6 ${isRtl ? 'pr-16 pl-6' : 'pl-16 pr-6'} bg-transparent outline-none text-lg text-slate-900 placeholder:text-slate-300 font-bold disabled:cursor-not-allowed`} 
-                  />
+                  
+                  {/* Search Button Box */}
+                  <button 
+                    type={!user && guestSearchCount >= GUEST_LIMIT ? 'button' : 'submit'}
+                    onClick={!user && guestSearchCount >= GUEST_LIMIT ? handleUnlockEngine : undefined}
+                    className={`px-8 md:px-10 py-4 rounded-2xl font-black text-base transition-all shadow-sm flex items-center justify-center gap-2 md:min-w-[200px]
+                      ${!user && guestSearchCount >= GUEST_LIMIT 
+                        ? 'bg-slate-400 text-white cursor-pointer hover:bg-slate-500' 
+                        : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-md active:scale-95'}
+                      ${loading ? 'opacity-50' : ''}
+                    `}
+                  >
+                    {loading ? (
+                      <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    ) : (
+                      <>
+                        {!user && guestSearchCount >= GUEST_LIMIT && <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-label={lang === 'ar' ? 'أيقونة قفل' : 'Lock Icon'}><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>}
+                        {!user && guestSearchCount >= GUEST_LIMIT ? (isRtl ? 'فتح المحرك' : 'Unlock Engine') : t.searchBtn}
+                      </>
+                    )}
+                  </button>
                 </div>
-                <button 
-                  type="submit"
-                  className={`px-12 py-6 rounded-[1.8rem] font-black text-lg transition-all shadow-xl min-w-[220px] flex items-center justify-center gap-3
-                    ${!user && guestSearchCount >= GUEST_LIMIT 
-                      ? 'bg-slate-400 text-white cursor-pointer hover:bg-slate-500' 
-                      : 'bg-blue-600 text-white hover:bg-blue-700 hover:scale-[1.02] active:scale-95 shadow-blue-200'}
-                    ${loading ? 'opacity-50' : ''}
-                  `}
-                >
-                  {loading ? (
-                    <div className="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  ) : (
-                    <>
-                      {!user && guestSearchCount >= GUEST_LIMIT && <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>}
-                      {!user && guestSearchCount >= GUEST_LIMIT ? (isRtl ? 'فتح المحرك' : 'Unlock Engine') : t.searchBtn}
-                    </>
-                  )}
-                </button>
               </form>
+              
+              {/* رسالة توضيحية للعميل */}
+              <div className="max-w-6xl mx-auto mt-3 px-4">
+                <div className="p-3 bg-blue-50/50 border border-blue-100 rounded-xl text-center">
+                  <p className="text-xs text-blue-700 leading-relaxed">
+                    {isRtl ? (
+                      <>
+                        يمكنك البحث بـ
+                        <span className="font-bold"> اسم المنتج</span> أو 
+                        <span className="font-bold"> رابط المنتج</span> أو 
+                        <span className="font-bold"> رابط المتجر</span> 
+                        للحصول على نتائج أدق
+                      </>
+                    ) : (
+                      <>
+                        Search by <span className="font-bold">product name</span>, <span className="font-bold">product link</span>, or <span className="font-bold">store link</span> for accurate results
+                      </>
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              {/* ميزات محرك البحث */}
+              {!loading && !result && (
+                <div className="max-w-6xl mx-auto mt-12">
+                  <SearchFeatures lang={lang} />
+                </div>
+              )}
             </div>
 
             {loading && (
@@ -392,7 +638,7 @@ const App: React.FC = () => {
                    
                    {/* Central Lightbulb Icon with subtle pulse */}
                    <div className="relative z-10 animate-pulse duration-[2000ms]">
-                      <svg className="w-24 h-24 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="w-24 h-24 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-label={lang === 'ar' ? 'أيقونة مصباح' : 'Lightbulb Icon'}>
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.989-2.386l-.548-.547z" />
                       </svg>
                    </div>
@@ -417,14 +663,52 @@ const App: React.FC = () => {
                 </div>
               </div>
             )}
-            {result && <AnalysisDashboard data={result} lang={lang} queryStr={lastSearchedQuery} />}
+            {result && <AnalysisDashboard data={result} lang={lang} queryStr={lastSearchedQuery} apiKey={appConfig?.geminiApiKey} userId={user?.uid} region={user ? (profile?.region || 'SA') : guestRegion} />}
           </>
         )}
       </main>
 
+      <SearchHistoryModal
+        isOpen={showSearchHistoryModal}
+        lang={lang}
+        guestSearchCount={guestSearchCount}
+        onClose={() => setShowSearchHistoryModal(false)}
+        onProceedWithSearch={() => {
+          setShowSearchHistoryModal(false);
+          handleSearch();
+        }}
+        onLoginRedirect={() => {
+          setShowSearchHistoryModal(false);
+          setView('AUTH');
+          navigate('/auth');
+        }}
+      />
+
+      {/* Region Selector Widget */}
+      <RegionSelector 
+        lang={lang}
+        user={user}
+        profile={profile}
+        guestRegion={guestRegion}
+        onRegionChange={(region) => {
+          if (user) {
+            refreshProfile(user.uid, user.email!);
+          } else {
+            setGuestRegion(region);
+            localStorage.setItem('guest_region', region);
+          }
+        }}
+      />
+
       <footer className="w-full py-6 bg-white border-t border-slate-100 text-center text-slate-400 text-xs font-bold">
         <div className="max-w-7xl mx-auto px-6">
-          <p>{activeSiteName} — {isRtl ? 'كافة الحقوق محفوظة' : 'All rights reserved'} © 2026</p>
+          <p className="text-[10px] mb-2 leading-relaxed">
+            {isRtl 
+              ? 'تحليل السوق • الذكاء الاصطناعي • تحليل المنتجات • ذكاء العملاء • دراسة المنافسين • تحليل الفرص • توقعات النمو • تحليل الربحية • استراتيجية التسويق • تحليل المبيعات'
+              : 'Market Analysis • Artificial Intelligence • Product Analysis • Customer Intelligence • Competitor Research • Opportunity Discovery • Growth Forecasting • Profit Analysis • Marketing Strategy • Sales Analytics'
+            }
+          </p>
+          <p>{activeSiteName} — {isRtl ? 'كافة الحقوق محفوظة' : 'All rights reserved'} © 2026 | info@tahlilplus.net</p>
         </div>
       </footer>
     </div>

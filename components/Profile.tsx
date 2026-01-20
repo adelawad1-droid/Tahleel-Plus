@@ -97,141 +97,183 @@ export const Profile: React.FC<Props> = ({ profile, plans, lang, onRefresh }) =>
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="max-w-6xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
       
-      {/* Profile Header */}
-      <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-xl">
-        <div className="flex items-center gap-6 mb-8 pb-8 border-b border-slate-50">
-           <div className="w-20 h-20 bg-blue-600 rounded-3xl flex items-center justify-center text-white text-3xl font-black shadow-lg shadow-blue-100">
-              {profile.displayName ? profile.displayName[0].toUpperCase() : profile.email[0].toUpperCase()}
-           </div>
-           <div>
-              <h2 className="text-2xl font-black text-slate-900">{t.profile}</h2>
-              <p className="text-slate-400 font-bold text-sm">{profile.email}</p>
-              <span className="inline-block mt-2 bg-blue-50 text-blue-600 text-[10px] font-black px-3 py-1 rounded-full border border-blue-100 uppercase tracking-widest">{profile.plan} PLAN</span>
-           </div>
-        </div>
+      {/* Page Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-black text-slate-900 mb-2">{t.profile}</h1>
+        <p className="text-slate-500 font-bold">{isRtl ? 'إدارة بياناتك الشخصية وإعدادات الحساب' : 'Manage your personal data and account settings'}</p>
+      </div>
 
-        {/* Subscription Info Card */}
-        <div className="mb-8 p-6 bg-slate-900 rounded-[2rem] text-white shadow-2xl relative overflow-hidden">
-           <div className="absolute top-0 right-0 p-4 opacity-10">
-              <svg className="w-24 h-24" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-           </div>
-           <div className="relative z-10">
-              <div className="flex justify-between items-center mb-6">
-                 <div>
-                    <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] mb-1">{isRtl ? 'الباقة الحالية' : 'Current Plan'}</p>
-                    <h3 className="text-2xl font-black">{currentPlan ? (isRtl ? currentPlan.nameAr : currentPlan.nameEn) : profile.plan}</h3>
-                 </div>
-                 <div className="text-right">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">{isRtl ? 'تاريخ الانتهاء' : 'Expiry Date'}</p>
-                    <p className="font-bold text-sm">{expiryDate}</p>
-                 </div>
+      {/* Two Column Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        {/* Left Column - Profile Info & Plan (Sidebar) */}
+        <div className="lg:col-span-1 space-y-6">
+          
+          {/* Profile Card */}
+          <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-lg">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-20 h-20 bg-blue-600 rounded-3xl flex items-center justify-center text-white text-3xl font-black shadow-lg shadow-blue-100 mb-4">
+                {profile.displayName ? profile.displayName[0].toUpperCase() : profile.email[0].toUpperCase()}
+              </div>
+              <h2 className="text-lg font-black text-slate-900">{profile.displayName || profile.email.split('@')[0]}</h2>
+              <p className="text-slate-400 font-bold text-xs mb-3">{profile.email}</p>
+              <span className="inline-block bg-blue-50 text-blue-600 text-[10px] font-black px-3 py-1.5 rounded-full border border-blue-100 uppercase tracking-widest">{profile.plan}</span>
+            </div>
+          </div>
+
+          {/* Subscription Card */}
+          <div className="bg-slate-900 p-6 rounded-[2rem] text-white shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-4 opacity-10">
+              <svg className="w-20 h-20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+            </div>
+            <div className="relative z-10 space-y-4">
+              <div>
+                <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] mb-1">{isRtl ? 'الباقة الحالية' : 'Current Plan'}</p>
+                <h3 className="text-2xl font-black">{currentPlan ? (isRtl ? currentPlan.nameAr : currentPlan.nameEn) : profile.plan}</h3>
               </div>
               
-              <div className="space-y-3">
-                 <div className="flex justify-between text-xs font-black">
-                    <span className="text-slate-400 uppercase tracking-widest">{isRtl ? 'استهلاك البحث' : 'Search Usage'}</span>
-                    <span>{profile.searchCount} / {profile.plan === 'ELITE' ? (isRtl ? 'غير محدود' : 'Unlimited') : searchLimit}</span>
-                 </div>
-                 <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full transition-all duration-1000 ${usagePercent > 80 ? 'bg-rose-500' : 'bg-blue-500'}`}
-                      style={{ width: `${usagePercent}%` }}
-                    ></div>
-                 </div>
+              <div className="pt-4 border-t border-slate-800">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">{isRtl ? 'تاريخ الانتهاء' : 'Expires'}</p>
+                <p className="font-bold text-sm">{expiryDate}</p>
               </div>
-           </div>
+              
+              <div className="pt-4 border-t border-slate-800 space-y-2">
+                <div className="flex justify-between text-xs font-black">
+                  <span className="text-slate-400 uppercase">{isRtl ? 'الاستهلاك' : 'Usage'}</span>
+                  <span>{profile.searchCount} / {profile.plan === 'ELITE' ? '∞' : searchLimit}</span>
+                </div>
+                <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full transition-all duration-1000 ${usagePercent > 80 ? 'bg-rose-500' : 'bg-blue-500'}`}
+                    style={{ width: `${usagePercent}%` }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Danger Zone Card */}
+          <div className="bg-rose-50 p-6 rounded-[2rem] border border-rose-200">
+            <div className="flex items-center gap-2 mb-3">
+              <svg className="w-5 h-5 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <h3 className="text-lg font-black text-rose-600">{t.deleteAccount}</h3>
+            </div>
+            <p className="text-xs text-rose-600 font-bold mb-4">{t.deleteAccountWarning}</p>
+            <button 
+              onClick={() => triggerReauth('DELETE')}
+              className="w-full bg-rose-600 text-white px-6 py-3 rounded-xl font-black text-sm hover:bg-rose-700 transition-all"
+            >
+              {t.deleteAccount}
+            </button>
+          </div>
         </div>
 
-        {error && (
-          <div className="mb-6 p-4 bg-rose-50 border border-rose-100 rounded-2xl text-rose-600 text-xs font-black">
-            {error}
-          </div>
-        )}
-        {success && (
-          <div className="mb-6 p-4 bg-emerald-50 border border-emerald-100 rounded-2xl text-emerald-600 text-xs font-black">
-            {success}
-          </div>
-        )}
-
-        <div className="space-y-6">
-          {/* Update Name */}
-          <div className="space-y-2">
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.displayName}</label>
-            <div className="flex gap-3">
-              <input 
-                type="text" 
-                value={displayName} 
-                onChange={(e) => setDisplayName(e.target.value)}
-                className="flex-1 px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 font-bold"
-              />
-              <button 
-                onClick={handleUpdateName}
-                disabled={loading}
-                className="bg-blue-600 text-white px-6 py-3 rounded-xl font-black text-sm hover:bg-blue-700 transition-all disabled:opacity-50"
-              >
-                {t.saveChanges}
-              </button>
+        {/* Right Column - Account Settings */}
+        <div className="lg:col-span-2">
+          <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-lg space-y-8">
+            
+            <div>
+              <h3 className="text-xl font-black text-slate-900 mb-1">{isRtl ? 'إعدادات الحساب' : 'Account Settings'}</h3>
+              <p className="text-xs text-slate-400 font-bold">{isRtl ? 'قم بتحديث معلوماتك الشخصية' : 'Update your personal information'}</p>
             </div>
-          </div>
 
-          {/* Update Email */}
-          <div className="space-y-2">
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.email}</label>
-            <div className="flex gap-3">
-              <input 
-                type="email" 
-                value={email} 
-                onChange={(e) => setEmail(e.target.value)}
-                className="flex-1 px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 font-bold"
-              />
-              <button 
-                onClick={() => triggerReauth('EMAIL')}
-                disabled={loading}
-                className="bg-slate-900 text-white px-6 py-3 rounded-xl font-black text-sm hover:bg-slate-800 transition-all"
-              >
-                {isRtl ? 'تحديث البريد' : 'Update Email'}
-              </button>
+            <div>
+              <h3 className="text-xl font-black text-slate-900 mb-1">{isRtl ? 'إعدادات الحساب' : 'Account Settings'}</h3>
+              <p className="text-xs text-slate-400 font-bold">{isRtl ? 'قم بتحديث معلوماتك الشخصية' : 'Update your personal information'}</p>
             </div>
-          </div>
 
-          {/* Update Password */}
-          <div className="pt-6 border-t border-slate-50 space-y-4">
-            <h3 className="text-lg font-black text-slate-900">{t.changePassword}</h3>
-            <div className="space-y-2">
-               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.newPassword}</label>
-               <div className="flex gap-3">
+            {error && (
+              <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl text-rose-600 text-xs font-black">
+                {error}
+              </div>
+            )}
+            {success && (
+              <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl text-emerald-600 text-xs font-black">
+                {success}
+              </div>
+            )}
+
+            <div className="space-y-6">
+              {/* Update Name */}
+              <div className="space-y-2">
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.displayName}</label>
+                <div className="flex gap-3">
                   <input 
-                    type="password" 
-                    value={newPassword} 
-                    onChange={(e) => setNewPassword(e.target.value)}
+                    type="text" 
+                    value={displayName} 
+                    onChange={(e) => setDisplayName(e.target.value)}
                     className="flex-1 px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 font-bold"
-                    placeholder="••••••••"
                   />
                   <button 
-                    onClick={() => triggerReauth('PASSWORD')}
-                    disabled={loading || !newPassword}
-                    className="bg-slate-900 text-white px-6 py-3 rounded-xl font-black text-sm hover:bg-slate-800 transition-all disabled:opacity-50"
+                    onClick={handleUpdateName}
+                    disabled={loading}
+                    className="bg-blue-600 text-white px-6 py-3 rounded-xl font-black text-sm hover:bg-blue-700 transition-all disabled:opacity-50 whitespace-nowrap"
                   >
-                    {t.changePassword}
+                    {t.saveChanges}
                   </button>
-               </div>
-            </div>
-          </div>
+                </div>
+              </div>
 
-          {/* Danger Zone */}
-          <div className="pt-8 border-t border-rose-50 space-y-4">
-             <div className="bg-rose-50 p-6 rounded-3xl border border-rose-100">
-                <h3 className="text-lg font-black text-rose-600 mb-2">{t.deleteAccount}</h3>
-                <p className="text-xs text-rose-500 font-bold mb-4">{t.deleteAccountWarning}</p>
-                <button 
-                  onClick={() => triggerReauth('DELETE')}
-                  className="bg-rose-600 text-white px-8 py-3 rounded-xl font-black text-sm hover:bg-rose-700 transition-all"
-                >
-                  {t.deleteAccount}
-                </button>
-             </div>
+              {/* Update Email */}
+              <div className="space-y-2">
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.email}</label>
+                <div className="flex gap-3">
+                  <input 
+                    type="email" 
+                    value={email} 
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="flex-1 px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 font-bold"
+                  />
+                  <button 
+                    onClick={() => triggerReauth('EMAIL')}
+                    disabled={loading}
+                    className="bg-slate-900 text-white px-6 py-3 rounded-xl font-black text-sm hover:bg-slate-800 transition-all whitespace-nowrap"
+                  >
+                    {isRtl ? 'تحديث' : 'Update'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Update Password */}
+              <div className="pt-6 border-t border-slate-100 space-y-4">
+                <h3 className="text-lg font-black text-slate-900">{t.changePassword}</h3>
+                <div className="space-y-4">
+                   <div className="space-y-2">
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">{isRtl ? 'كلمة المرور الحالية' : 'Current Password'}</label>
+                      <input 
+                        type="password" 
+                        value={currentPassword} 
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 font-bold"
+                        placeholder="••••••••"
+                      />
+                   </div>
+                   <div className="space-y-2">
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.newPassword}</label>
+                      <div className="flex gap-3">
+                        <input 
+                          type="password" 
+                          value={newPassword} 
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          className="flex-1 px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 font-bold"
+                          placeholder="••••••••"
+                        />
+                        <button 
+                          onClick={() => triggerReauth('PASSWORD')}
+                          disabled={loading || !newPassword || !currentPassword}
+                          className="bg-slate-900 text-white px-6 py-3 rounded-xl font-black text-sm hover:bg-slate-800 transition-all disabled:opacity-50 whitespace-nowrap"
+                        >
+                          {isRtl ? 'تغيير' : 'Change'}
+                        </button>
+                      </div>
+                   </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

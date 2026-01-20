@@ -57,10 +57,23 @@ export const Pricing: React.FC<Props> = ({ lang, onSelect }) => {
               </span>
             )}
             <h3 className="text-xl font-black text-slate-900 mb-2">{isRtl ? plan.nameAr : plan.nameEn}</h3>
-            <div className="flex items-baseline gap-1 mb-8">
-              <span className="text-4xl font-black text-slate-900">{plan.price}</span>
-              <span className="text-slate-400 font-bold text-sm">{isRtl ? 'ر.س / شهر' : 'SAR / mo'}</span>
+            <div className="flex items-baseline gap-2 mb-2">
+              {plan.discountedPrice ? (
+                <>
+                  <span className="text-4xl font-black text-emerald-600">{plan.discountedPrice}</span>
+                  <span className="text-slate-400 font-bold text-sm">{isRtl ? 'ر.س' : 'SAR'}</span>
+                  <span className="text-lg font-black text-slate-400 line-through">{plan.price}</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-4xl font-black text-slate-900">{plan.price}</span>
+                  <span className="text-slate-400 font-bold text-sm">{isRtl ? 'ر.س' : 'SAR'}</span>
+                </>
+              )}
             </div>
+            <p className="text-sm text-slate-500 font-bold mb-8">
+              {isRtl ? `${plan.durationMonths || 1} شهر` : `${plan.durationMonths || 1} month${(plan.durationMonths || 1) > 1 ? 's' : ''}`}
+            </p>
             <ul className="space-y-4 mb-10">
               {(isRtl ? plan.featuresAr : plan.featuresEn).map((f, i) => (
                 <li key={i} className="flex items-center gap-3 text-slate-600 font-medium text-sm">

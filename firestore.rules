@@ -47,5 +47,21 @@ service cloud.firestore {
       // الكتابة والتعديل للمشرف فقط
       allow write: if isAdmin();
     }
+    
+    // قواعد أقسام المكتبة العامة
+    match /libraryCategories/{categoryId} {
+      // القراءة متاحة للجميع
+      allow read: if true;
+      // الكتابة والتعديل والحذف للمشرف فقط
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // قواعد المكتبة العامة
+    match /publicLibrary/{analysisId} {
+      // القراءة متاحة للجميع (حتى الزوار)
+      allow read: if true;
+      // النشر والتعديل والحذف للمشرف فقط
+      allow create, update, delete: if isAdmin();
+    }
   }
 }

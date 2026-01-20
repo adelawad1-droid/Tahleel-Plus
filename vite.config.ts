@@ -8,6 +8,10 @@ export default defineConfig(({ mode }) => {
       server: {
         port: 3000,
         host: '0.0.0.0',
+        middlewareMode: false,
+      },
+      preview: {
+        port: 3000,
       },
       plugins: [react()],
       define: {
@@ -17,6 +21,15 @@ export default defineConfig(({ mode }) => {
       resolve: {
         alias: {
           '@': path.resolve(__dirname, '.'),
+        }
+      },
+      build: {
+        outDir: 'dist',
+        emptyOutDir: true,
+        rollupOptions: {
+          input: {
+            main: path.resolve(__dirname, 'index.html'),
+          }
         }
       }
     };

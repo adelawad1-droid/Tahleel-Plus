@@ -1,16 +1,17 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { UserProfile, Language } from '../types';
+import { UserProfile, Language, PlanConfig } from '../types';
 import { TRANSLATIONS } from '../constants';
 
 interface Props {
   profile: UserProfile;
   lang: Language;
+  plans: PlanConfig[];
   onNavigate: (view: 'HOME' | 'ADMIN' | 'PRICING' | 'LIBRARY' | 'PROFILE') => void;
   onLogout: () => void;
 }
 
-export const UserMenu: React.FC<Props> = ({ profile, lang, onNavigate, onLogout }) => {
+export const UserMenu: React.FC<Props> = ({ profile, lang, plans, onNavigate, onLogout }) => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const t = TRANSLATIONS[lang];
@@ -24,6 +25,9 @@ export const UserMenu: React.FC<Props> = ({ profile, lang, onNavigate, onLogout 
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const currentPlan = plans.find(p => p.id === profile.plan);
+  const planDisplayName = currentPlan ? (isRtl ? currentPlan.nameAr : currentPlan.nameEn) : profile.plan;
+
   return (
     <div className="relative" ref={menuRef}>
       <button
@@ -34,16 +38,17 @@ export const UserMenu: React.FC<Props> = ({ profile, lang, onNavigate, onLogout 
           {profile.displayName ? profile.displayName[0].toUpperCase() : profile.email[0].toUpperCase()}
         </div>
         <div className="text-start hidden sm:block">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{profile.plan}</p>
-          <p className="text-xs font-bold text-slate-700 max-w-[120px] truncate">{profile.displayName || profile.email}</p>
+          <p className="text-xs font-bold text-slate-800 max-w-[140px] truncate leading-tight">{profile.displayName || profile.email.split('@')[0]}</p>
+          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide leading-none mt-0.5">{planDisplayName}</p>
         </div>
       </button>
 
       {isOpen && (
         <div className={`absolute top-full mt-3 w-64 bg-white rounded-[2rem] border border-slate-100 shadow-2xl z-[100] p-2 animate-in fade-in slide-in-from-top-2 ${isRtl ? 'left-0' : 'right-0'}`}>
           <div className="p-4 bg-slate-50 border-b border-slate-100 rounded-t-[1.5rem] mb-2">
-            <span className="text-[10px] font-black bg-blue-100 text-blue-700 px-2 py-1 rounded-lg uppercase">{profile.plan} PLAN</span>
-            <p className="text-xs font-bold text-slate-500 mt-2 truncate">{profile.email}</p>
+            <p className="text-xs font-bold text-slate-800 truncate mb-1.5">{profile.displayName || profile.email.split('@')[0]}</p>
+            <span className="text-[10px] font-black bg-blue-100 text-blue-700 px-2.5 py-1 rounded-lg uppercase tracking-wide">{planDisplayName}</span>
+            <p className="text-[10px] font-medium text-slate-400 mt-2 truncate">{profile.email}</p>
           </div>
 
           <button onClick={() => { onNavigate('PROFILE'); setIsOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-slate-700 hover:bg-blue-50 hover:text-blue-600 rounded-2xl transition-colors group">
@@ -51,13 +56,6 @@ export const UserMenu: React.FC<Props> = ({ profile, lang, onNavigate, onLogout 
                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
              </div>
              {t.profile}
-          </button>
-
-          <button onClick={() => { onNavigate('LIBRARY'); setIsOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-slate-700 hover:bg-blue-50 hover:text-blue-600 rounded-2xl transition-colors group">
-             <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
-               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
-             </div>
-             {isRtl ? 'مكتبتي المحفوظة' : 'My Library'}
           </button>
 
           {profile.isAdmin && (

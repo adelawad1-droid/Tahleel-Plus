@@ -1,0 +1,120 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base font */
+:root {
+  --font-family-base: 'Cairo', system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+}
+body { font-family: var(--font-family-base); }
+
+/* ===== نظام الطباعة ===== */
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 1cm;
+  }
+  
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  /* إخفاء العناصر غير المطلوبة فقط */
+  nav, 
+  footer, 
+  .no-print, 
+  .sticky,
+  button {
+    display: none !important;
+  }
+  
+  /* عند الطباعة الكاملة - إظهار جميع الأقسام */
+  body.print-all .hidden {
+    display: block !important;
+    visibility: visible !important;
+  }
+  
+  body.print-all .tab-content-section {
+    display: block !important;
+  }
+  
+  /* عند طباعة قسم واحد - إخفاء باقي الأقسام */
+  body.print-single-section .tab-content-section {
+    display: none !important;
+  }
+  
+  body.print-single-section .tab-content-section.print-active {
+    display: block !important;
+  }
+  
+  /* الحفاظ على Grid للمربعات الصغيرة */
+  .grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 1rem !important;
+  }
+  
+  /* للشاشات الأصغر */
+  .grid.grid-cols-1 {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .grid.grid-cols-2 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
+  .grid.grid-cols-3,
+  .grid.md\:grid-cols-3,
+  .grid.lg\:grid-cols-3 {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+  
+  .grid.grid-cols-4,
+  .grid.lg\:grid-cols-4 {
+    grid-template-columns: repeat(4, 1fr) !important;
+  }
+  
+  /* البطاقات تبقى في مكانها */
+  .grid > div {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  
+  /* كسر الصفحات بين الأقسام فقط */
+  .print-page-break {
+    page-break-after: always;
+  }
+  
+  .print-no-break {
+    page-break-inside: avoid;
+  }
+  
+  /* المخططات */
+  .recharts-responsive-container {
+    page-break-inside: avoid;
+  }
+  
+  /* الجداول */
+  table {
+    page-break-inside: avoid;
+  }
+  
+  /* الحفاظ على flex للعناصر الصغيرة */
+  .flex.items-center,
+  .flex.justify-between,
+  .flex.gap-2,
+  .flex.gap-3 {
+    display: flex !important;
+  }
+  
+  /* space-y يبقى كما هو */
+  .space-y-8 > * + * {
+    margin-top: 2rem !important;
+  }
+  
+  .space-y-6 > * + * {
+    margin-top: 1.5rem !important;
+  }
+}
+
