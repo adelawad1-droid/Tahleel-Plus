@@ -230,16 +230,22 @@ const App: React.FC = () => {
   };
 
   const handleUnlockEngine = () => {
-    if (!user && guestSearchCount >= GUEST_LIMIT) {
-      setShowSearchHistoryModal(true);
-    }
+    // التوجيه لصفحة تسجيل الدخول
+    navigate('/auth');
   };
 
   const handleSearch = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!query.trim()) return;
 
-    if (!user && guestSearchCount >= GUEST_LIMIT) {
+    // منع البحث لغير المسجلين - يجب تسجيل الدخول أولاً
+    if (!user) {
+      setShowLimitModal(true);
+      return;
+    }
+
+    // التحقق من عدد عمليات البحث للمستخدم المجاني
+    if (profile?.plan === 'FREE' && (profile?.searchCount || 0) >= GUEST_LIMIT) {
       setShowLimitModal(true);
       return;
     }
@@ -253,15 +259,14 @@ const App: React.FC = () => {
       const dbApiKey = appConfig?.geminiApiKey;
       const dbSearchKey = appConfig?.googleSearchApiKey;
       const dbSearchId = appConfig?.googleSearchId;
-      const userRegion = user ? (profile?.region || 'SA') : guestRegion;
+      const userRegion = profile?.region || 'SA';
       const data = await analyzeEcommerceQuery(query, lang, dbApiKey, dbSearchKey, dbSearchId, userRegion);
       setResult(data);
       
+      // زيادة عداد البحث للمستخدم المسجل
       if (user) {
         await incrementSearchCount(user.uid);
         await refreshProfile(user.uid, user.email!);
-      } else {
-        setGuestSearchCount(prev => prev + 1);
       }
     } catch (err: any) {
       setError(err.message || "حدث خطأ أثناء التحليل.");
@@ -384,9 +389,16 @@ const App: React.FC = () => {
           <div className="flex items-center gap-4">
             <div className="hidden md:flex items-center gap-4">
               {!user && (
+                <div className="flex items-center gap-2 px-3 py-1 bg-rose-50 border border-rose-100 rounded-lg">
+                  <span className="text-[10px] font-black text-rose-600 uppercase tracking-tight">
+                    {isRtl ? 'سجّل دخولك للبحث' : 'Login to Search'}
+                  </span>
+                </div>
+              )}
+              {user && profile && profile.plan === 'FREE' && (
                 <div className="flex items-center gap-2 px-3 py-1 bg-amber-50 border border-amber-100 rounded-lg">
                   <span className="text-[10px] font-black text-amber-600 uppercase tracking-tight">
-                    {isRtl ? `التجارب المتبقية: ${Math.max(0, GUEST_LIMIT - guestSearchCount)}` : `Trials Left: ${Math.max(0, GUEST_LIMIT - guestSearchCount)}`}
+                    {isRtl ? `التجارب المتبقية: ${Math.max(0, GUEST_LIMIT - (profile.searchCount || 0))}` : `Trials Left: ${Math.max(0, GUEST_LIMIT - (profile.searchCount || 0))}`}
                   </span>
                 </div>
               )}
@@ -474,9 +486,9 @@ const App: React.FC = () => {
                 </>
               ) : (
                 <>
-                  <div className="px-4 py-2 bg-amber-50 border border-amber-100 rounded-lg">
-                    <span className="text-xs font-black text-amber-600">
-                      {isRtl ? `التجارب المتبقية: ${Math.max(0, GUEST_LIMIT - guestSearchCount)}` : `Trials Left: ${Math.max(0, GUEST_LIMIT - guestSearchCount)}`}
+                  <div className="px-4 py-2 bg-rose-50 border border-rose-100 rounded-lg">
+                    <span className="text-xs font-black text-rose-600">
+                      {isRtl ? 'سجّل دخولك للبحث' : 'Login to Search'}
                     </span>
                   </div>
                   <button 
@@ -559,7 +571,7 @@ const App: React.FC = () => {
                 </div>
               )}
 
-              <form onSubmit={handleSearch} className={`max-w-6xl mx-auto ${!user && guestSearchCount >= GUEST_LIMIT ? 'opacity-50 grayscale select-none cursor-not-allowed' : ''}`}>
+              <form onSubmit={handleSearch} className={`max-w-6xl mx-auto ${!user ? 'opacity-50 grayscale select-none cursor-not-allowed' : (profile?.plan === 'FREE' && (profile?.searchCount || 0) >= GUEST_LIMIT) ? 'opacity-50 grayscale select-none cursor-not-allowed' : ''}`}>
                 <div className="flex flex-col md:flex-row gap-3">
                   {/* Search Input Box */}
                   <div className="flex-1 relative">
@@ -568,22 +580,24 @@ const App: React.FC = () => {
                     </div>
                     <input 
                       type="text" 
-                      disabled={!user && guestSearchCount >= GUEST_LIMIT}
+                      disabled={!user || (profile?.plan === 'FREE' && (profile?.searchCount || 0) >= GUEST_LIMIT)}
                       value={query} 
                       onChange={(e) => setQuery(e.target.value)} 
-                      placeholder={!user && guestSearchCount >= GUEST_LIMIT ? (isRtl ? 'انتهت تجاربك.. سجل دخولك للمتابعة' : 'Trials ended.. login to continue') : t.searchPlaceholder} 
+                      placeholder={!user ? (isRtl ? 'سجّل دخولك للبحث...' : 'Login to search...') : (profile?.plan === 'FREE' && (profile?.searchCount || 0) >= GUEST_LIMIT) ? (isRtl ? 'انتهت تجاربك.. اشترك للمتابعة' : 'Trials ended.. subscribe to continue') : t.searchPlaceholder} 
                       className={`w-full ${isRtl ? 'pr-14 pl-5' : 'pl-14 pr-5'} py-4 bg-white border border-slate-200 rounded-2xl outline-none text-base text-slate-900 placeholder:text-slate-400 font-bold disabled:cursor-not-allowed shadow-sm transition-all hover:border-blue-300 hover:shadow-md focus:border-blue-500 focus:shadow-lg`} 
                     />
                   </div>
                   
                   {/* Search Button Box */}
                   <button 
-                    type={!user && guestSearchCount >= GUEST_LIMIT ? 'button' : 'submit'}
-                    onClick={!user && guestSearchCount >= GUEST_LIMIT ? handleUnlockEngine : undefined}
+                    type={!user || (profile?.plan === 'FREE' && (profile?.searchCount || 0) >= GUEST_LIMIT) ? 'button' : 'submit'}
+                    onClick={!user ? handleUnlockEngine : (profile?.plan === 'FREE' && (profile?.searchCount || 0) >= GUEST_LIMIT) ? () => { setView('PRICING'); navigate('/pricing'); } : undefined}
                     className={`px-8 md:px-10 py-4 rounded-2xl font-black text-base transition-all shadow-sm flex items-center justify-center gap-2 md:min-w-[200px]
-                      ${!user && guestSearchCount >= GUEST_LIMIT 
-                        ? 'bg-slate-400 text-white cursor-pointer hover:bg-slate-500' 
-                        : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-md active:scale-95'}
+                      ${!user 
+                        ? 'bg-emerald-600 text-white cursor-pointer hover:bg-emerald-700' 
+                        : (profile?.plan === 'FREE' && (profile?.searchCount || 0) >= GUEST_LIMIT)
+                          ? 'bg-amber-500 text-white cursor-pointer hover:bg-amber-600'
+                          : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-md active:scale-95'}
                       ${loading ? 'opacity-50' : ''}
                     `}
                   >
@@ -591,8 +605,9 @@ const App: React.FC = () => {
                       <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
                     ) : (
                       <>
-                        {!user && guestSearchCount >= GUEST_LIMIT && <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-label={lang === 'ar' ? 'أيقونة قفل' : 'Lock Icon'}><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>}
-                        {!user && guestSearchCount >= GUEST_LIMIT ? (isRtl ? 'فتح المحرك' : 'Unlock Engine') : t.searchBtn}
+                        {!user && <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-label={lang === 'ar' ? 'أيقونة تسجيل' : 'Login Icon'}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg>}
+                        {(profile?.plan === 'FREE' && (profile?.searchCount || 0) >= GUEST_LIMIT) && <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-label={lang === 'ar' ? 'أيقونة ترقية' : 'Upgrade Icon'}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>}
+                        {!user ? (isRtl ? 'سجّل دخولك' : 'Login') : (profile?.plan === 'FREE' && (profile?.searchCount || 0) >= GUEST_LIMIT) ? (isRtl ? 'اشترك الآن' : 'Subscribe') : t.searchBtn}
                       </>
                     )}
                   </button>
@@ -631,15 +646,27 @@ const App: React.FC = () => {
             {loading && (
               <div className="text-center py-20 animate-in fade-in duration-500">
                 <div className="relative w-48 h-48 mx-auto mb-10 flex items-center justify-center">
-                   {/* Breathing Circles around the bulb */}
-                   <div className="absolute w-20 h-20 border-2 border-blue-400 rounded-full animate-[ping_3s_infinite] opacity-30"></div>
-                   <div className="absolute w-32 h-32 border border-blue-300 rounded-full animate-[ping_4s_infinite] opacity-10"></div>
-                   <div className="absolute w-40 h-40 border border-blue-200 rounded-full animate-[ping_5s_infinite] opacity-5"></div>
                    
-                   {/* Central Lightbulb Icon with subtle pulse */}
-                   <div className="relative z-10 animate-pulse duration-[2000ms]">
-                      <svg className="w-24 h-24 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-label={lang === 'ar' ? 'أيقونة مصباح' : 'Lightbulb Icon'}>
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.989-2.386l-.548-.547z" />
+                   {/* Rotating Orbit Rings */}
+                   <div className="absolute w-40 h-40 rounded-full border-2 border-dashed border-blue-200 animate-[spin_8s_linear_infinite]"></div>
+                   <div className="absolute w-32 h-32 rounded-full border-2 border-dashed border-blue-300 animate-[spin_6s_linear_infinite_reverse]"></div>
+                   <div className="absolute w-24 h-24 rounded-full border-2 border-blue-400 animate-[spin_4s_linear_infinite]"></div>
+                   
+                   {/* Orbiting Dots */}
+                   <div className="absolute w-40 h-40 animate-[spin_3s_linear_infinite]">
+                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3 h-3 bg-blue-500 rounded-full shadow-lg shadow-blue-500/50"></div>
+                   </div>
+                   <div className="absolute w-32 h-32 animate-[spin_2.5s_linear_infinite_reverse]">
+                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-cyan-400 rounded-full shadow-lg shadow-cyan-400/50"></div>
+                   </div>
+                   <div className="absolute w-24 h-24 animate-[spin_2s_linear_infinite]">
+                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2 h-2 bg-indigo-500 rounded-full shadow-lg shadow-indigo-500/50"></div>
+                   </div>
+                   
+                   {/* Small Central Lightbulb Icon - No Background */}
+                   <div className="relative z-10">
+                      <svg className="w-10 h-10 text-blue-600 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.989-2.386l-.548-.547z" />
                       </svg>
                    </div>
                 </div>
@@ -652,7 +679,7 @@ const App: React.FC = () => {
                    {/* Progress Bar Container */}
                    <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
                       <div 
-                        className="h-full bg-blue-600 transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(37,99,235,0.4)]"
+                        className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(37,99,235,0.4)]"
                         style={{ width: `${((loadingStep + 1) / LOADING_MESSAGES[lang].length) * 100}%` }}
                       ></div>
                    </div>

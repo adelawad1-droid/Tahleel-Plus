@@ -1357,3 +1357,105 @@ export const openPrintWindow = (
     alert(lang === 'ar' ? 'فشل فتح نافذة الطباعة. يرجى السماح بالنوافذ المنبثقة.' : 'Failed to open print window. Please allow pop-ups.');
   }
 };
+
+// ═══════════════════════════════════════════════════════════════
+// Download as PDF - فتح نافذة مع زر تحميل مباشر
+// ═══════════════════════════════════════════════════════════════
+export const downloadAsPDF = (
+  data: AnalysisResult,
+  lang: 'ar' | 'en',
+  sectionName?: string
+) => {
+  const html = generatePrintHTML(data, lang, sectionName);
+  const isRtl = lang === 'ar';
+  const fileName = `${data.itemName || 'Tahleel-Plus-Report'}-${new Date().toISOString().split('T')[0]}`;
+  
+  // إضافة شريط علوي مع زر التحميل والتعليمات
+  const pdfHtml = html.replace(
+    '<body>',
+    `<body>
+    <div id="pdf-toolbar" style="
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(135deg, #0f172a, #1e3a5f);
+      color: white;
+      padding: 15px 30px;
+      z-index: 99999;
+      font-family: Cairo, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      direction: ${isRtl ? 'rtl' : 'ltr'};
+    ">
+      <div style="display: flex; align-items: center; gap: 15px;">
+        <span style="font-size: 24px;">📥</span>
+        <div>
+          <div style="font-weight: bold; font-size: 16px;">
+            ${isRtl ? 'تحميل كملف PDF' : 'Download as PDF'}
+          </div>
+          <div style="font-size: 12px; opacity: 0.8;">
+            ${isRtl ? 'اضغط على زر التحميل ثم اختر "Save as PDF" من خيارات الطابعة' : 'Click download button, then select "Save as PDF" from printer options'}
+          </div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <button onclick="window.print()" style="
+          background: linear-gradient(135deg, #10b981, #059669);
+          color: white;
+          border: none;
+          padding: 12px 24px;
+          border-radius: 10px;
+          font-weight: bold;
+          font-size: 14px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-family: Cairo, sans-serif;
+        ">
+          <span>⬇️</span>
+          ${isRtl ? 'تحميل PDF الآن' : 'Download PDF Now'}
+        </button>
+        <button onclick="document.getElementById('pdf-toolbar').style.display='none'" style="
+          background: rgba(255,255,255,0.2);
+          color: white;
+          border: none;
+          padding: 12px 16px;
+          border-radius: 10px;
+          font-weight: bold;
+          font-size: 14px;
+          cursor: pointer;
+          font-family: Cairo, sans-serif;
+        ">
+          ✕
+        </button>
+      </div>
+    </div>
+    <div style="padding-top: 80px;">`
+  ).replace(
+    '</body>',
+    `</div>
+    <style>
+      @media print {
+        #pdf-toolbar { display: none !important; }
+        body > div:first-of-type { padding-top: 0 !important; }
+      }
+    </style>
+    </body>`
+  );
+  
+  const printWindow = window.open('', '_blank', 'width=1200,height=900');
+  
+  if (printWindow) {
+    printWindow.document.write(pdfHtml);
+    printWindow.document.close();
+    // تركيز النافذة
+    printWindow.focus();
+  } else {
+    alert(lang === 'ar' ? 'فشل فتح نافذة التحميل. يرجى السماح بالنوافذ المنبثقة.' : 'Failed to open download window. Please allow pop-ups.');
+  }
+};

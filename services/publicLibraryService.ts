@@ -341,7 +341,10 @@ export const publishAnalysisByUser = async (
   queryStr: string,
   data: AnalysisResult,
   region: string,
-  categoryId?: string
+  categoryId?: string,
+  dataAr?: AnalysisResult,
+  dataEn?: AnalysisResult,
+  originalLang?: 'ar' | 'en'
 ): Promise<string> => {
   try {
     console.log('=== Starting publishAnalysisByUser ===');
@@ -361,6 +364,16 @@ export const publishAnalysisByUser = async (
     
     const savedData = savedAnalysisDoc.data();
     console.log('Saved analysis isPublished status:', savedData.isPublished);
+    
+    if (savedData.isPublished) {
+      console.log('Analysis already published!');
+      throw new Error('ALREADY_PUBLISHED');
+    }
+    
+    // استخدم النسخ المترجمة من التحليل المحفوظ إذا لم تُمرر
+    const finalDataAr = dataAr || savedData.dataAr;
+    const finalDataEn = dataEn || savedData.dataEn;
+    const finalOriginalLang = originalLang || savedData.originalLang;
     
     if (savedData.isPublished) {
       console.log('Analysis already published!');
@@ -445,6 +458,9 @@ export const publishAnalysisByUser = async (
       query: queryStr,
       normalizedQuery,
       data,
+      dataAr: finalDataAr, // النسخة العربية المترجمة
+      dataEn: finalDataEn, // النسخة الإنجليزية المترجمة
+      originalLang: finalOriginalLang, // لغة التحليل الأصلية
       publishedAt: Date.now(),
       publishedDate: Date.now(),
       publishedBy: userId,

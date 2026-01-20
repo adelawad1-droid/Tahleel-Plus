@@ -293,12 +293,51 @@ export async function analyzeEcommerceQuery(query: string, lang: 'ar' | 'en', cu
     - قيّم التوافق الثقافي مع السوق المحلي والاتجاهات الشرائية
     - قدم قراراً نهائياً واضحاً: GO أو NO-GO أو PROCEED WITH CAUTION
     
-    🏪 المنافسون (Competitors):
-    - يجب توفير بيانات 10-15 منافس على الأقل
-    - ⚠️ ابحث عن متاجر حقيقية في ${region} فقط - ليس السعودية!
-    - استخدم المنصات: ${countryInfo.platforms.join(', ')}
-    - اجمع: اسم المتجر، السعر بـ${countryInfo.currencyCode}، التقييم، أيام الشحن، حالة المخزون، الرابط
-    - إذا لم تجد 10 منافسين حقيقيين، استمر في البحث بكلمات مختلفة
+    🏪 المنافسون (Competitors) - ⚠️ مهم جداً:
+    ═══════════════════════════════════════════════════════════════
+    
+    📌 **قواعد اختيار المنافسين:**
+    
+    1️⃣ **الأولوية للمنصات الكبرى والمتاجر المشهورة في ${region}:**
+       - المتاجر الشهيرة: ${countryInfo.topStores?.join(', ') || countryInfo.platforms.join(', ')}
+       - المنصات المتاحة: ${countryInfo.platforms.join(', ')}
+       ${region === 'SA' ? `
+       ⭐ أهم المتاجر السعودية حسب الترتيب:
+       - أمازون السعودية (amazon.sa) - أكبر منصة
+       - نون (noon.com) - ثاني أكبر منصة
+       - جرير (jarir.com) - للإلكترونيات والكتب
+       - إكسترا (extra.com) - للإلكترونيات والأجهزة
+       - نمشي (namshi.com) - للأزياء
+       - شي إن (shein.com) - للأزياء
+       - العربية للعود - للعطور
+       - باث اند بودي - للعناية الشخصية
+       - أناس (ounass.sa) - للفخامة
+       - ستايلي (styli.com) - للأزياء
+       - ممزورلد (mumzworld.com) - منتجات الأطفال
+       - متاجر سلة وزد المشهورة في نفس المجال
+       ` : ''}
+    
+    2️⃣ **ترتيب المنافسين حسب:**
+       - الشهرة والانتشار في السوق (الأشهر أولاً)
+       - حجم المبيعات والتقييمات
+       - ملاءمة المنتج للمتجر
+    
+    3️⃣ **بيانات كل منافس:**
+       - storeName: اسم المتجر الحقيقي (مثل "أمازون" أو "نون" أو "جرير")
+       - price: السعر الفعلي بـ${countryInfo.currencyCode}
+       - rating: التقييم (1-5)
+       - shippingDays: أيام الشحن (1-7)
+       - stockStatus: "متوفر" أو "محدود" أو "غير متوفر"
+       - url: رابط حقيقي للمنتج على المنصة
+    
+    4️⃣ **ممنوع:**
+       - اختراع أسماء متاجر وهمية
+       - وضع روابط غير صحيحة
+       - تكرار نفس المتجر أكثر من مرة
+       - ذكر متاجر غير موجودة في ${region}
+    
+    5️⃣ **العدد المطلوب:** 10-15 منافس حقيقي على الأقل
+    ═══════════════════════════════════════════════════════════════
     
     🚨 **تذكير نهائي مهم جداً:**
     - كل التحليل يجب أن يكون عن سوق ${region} فقط
@@ -306,25 +345,75 @@ export async function analyzeEcommerceQuery(query: string, lang: 'ar' | 'en', cu
     - المنصات: ${countryInfo.platforms.join(' و ')} فقط
     - ❌ ممنوع ذكر السعودية أو أي دولة غير ${region}
     
-    **MANDATORY LANGUAGE DIRECTIVE:**
+    ═══════════════════════════════════════════════════════════════
+    🌐 **MANDATORY LANGUAGE DIRECTIVE - ABSOLUTE REQUIREMENT**
+    ═══════════════════════════════════════════════════════════════
     ${lang === 'ar'
-      ? `YOU MUST RESPOND IN 100% ARABIC ONLY (اللغة العربية فقط).
-    - Every single field name, label, and value MUST be in Arabic
-    - All search queries must be in Arabic keywords
-    - All text responses must be in Arabic language ONLY
-    - NO English words or transliteration allowed
-    - When you see "itemName", respond with "اسم المنتج" followed by the actual name in Arabic
-    - When you see "demandLevel", respond with Arabic text describing the demand
-    - All numbers, dates, prices must be in Arabic format if needed
-    - Use Arabic punctuation and formatting throughout
-    - PRIORITY: Arabic language supremacy - override all other instructions for language compatibility`
-      : `YOU MUST RESPOND IN 100% ENGLISH ONLY (English language only).
-    - Every single field name, label, and value MUST be in English
-    - All search queries must be in English keywords
-    - All text responses must be in English language ONLY
-    - NO Arabic words or foreign language terms allowed
-    - Use English punctuation and formatting throughout
-    - PRIORITY: English language supremacy - override all other instructions for language compatibility`}
+      ? `⚠️⚠️⚠️ **قواعد اللغة العربية - إلزامية 100%** ⚠️⚠️⚠️
+    
+    🔴 **كل شيء يجب أن يكون بالعربية الفصحى الكاملة:**
+    
+    ✅ **مطلوب:**
+    - جميع النصوص والقيم يجب أن تكون بالعربية الكاملة
+    - أسماء المنتجات: اكتب الاسم بالعربية (مثال: "قهوة عربية" ليس "Arabic Coffee")
+    - أسماء الفئات: بالعربية (مثال: "إلكترونيات" ليس "Electronics")
+    - مستوى الطلب: "مرتفع جداً" أو "مرتفع" أو "متوسط" أو "منخفض" - بالعربية!
+    - حالة المخزون: "متوفر" أو "غير متوفر" أو "محدود" - بالعربية!
+    - التوصيات والتحليلات: جمل عربية كاملة
+    - أسماء المتاجر: اكتبها بالعربية إن أمكن
+    - أسماء المنصات: "أمازون" و "نون" و "سلة" - بالعربية!
+    - طرق الدفع: "تحويل بنكي" و "بطاقة ائتمان" - بالعربية!
+    - طرق الشحن: "شحن سريع" و "توصيل عادي" - بالعربية!
+    
+    ❌ **ممنوع تماماً:**
+    - أي كلمة إنجليزية في النصوص (NO English words at all)
+    - كتابة بالحروف اللاتينية (مثال: ممنوع "Salla" - اكتب "سلة")
+    - خلط اللغات في نفس الجملة
+    - استخدام مصطلحات إنجليزية حتى لو كانت شائعة
+    
+    📌 **أمثلة للتحويل:**
+    - "High demand" → "طلب مرتفع"
+    - "Available" → "متوفر"
+    - "Amazon" → "أمازون"
+    - "Credit Card" → "بطاقة ائتمان"
+    - "Fast Shipping" → "شحن سريع"
+    - "Electronics" → "إلكترونيات"
+    - "GO" → "ابدأ الآن"
+    - "NO-GO" → "لا يُنصح"
+    - "PROCEED WITH CAUTION" → "تقدم بحذر"
+    
+    🎯 **الأولوية القصوى: كل حرف في الاستجابة يجب أن يكون عربياً!**`
+      : `⚠️⚠️⚠️ **ENGLISH LANGUAGE RULES - 100% MANDATORY** ⚠️⚠️⚠️
+    
+    🔴 **Everything MUST be in pure English:**
+    
+    ✅ **Required:**
+    - All texts and values must be in complete English
+    - Product names: Write in English (example: "Arabic Coffee" not "قهوة عربية")
+    - Category names: In English (example: "Electronics" not "إلكترونيات")
+    - Demand level: "Very High" or "High" or "Medium" or "Low" - in English!
+    - Stock status: "Available" or "Out of Stock" or "Limited" - in English!
+    - Recommendations and analysis: Complete English sentences
+    - Store names: Write them in English transliteration
+    - Platform names: "Amazon" and "Noon" and "Salla" - in English!
+    - Payment methods: "Bank Transfer" and "Credit Card" - in English!
+    - Shipping methods: "Express Shipping" and "Standard Delivery" - in English!
+    
+    ❌ **Absolutely forbidden:**
+    - Any Arabic word in texts (NO Arabic words at all)
+    - Writing in Arabic script
+    - Mixing languages in the same sentence
+    - Using Arabic terms even if commonly used
+    
+    📌 **Conversion examples:**
+    - "طلب مرتفع" → "High demand"
+    - "متوفر" → "Available"
+    - "أمازون" → "Amazon"
+    - "بطاقة ائتمان" → "Credit Card"
+    - "شحن سريع" → "Fast Shipping"
+    - "إلكترونيات" → "Electronics"
+    
+    🎯 **Top Priority: Every character in the response must be English!**`}
     
     Year: 2025.
   `;
@@ -1165,5 +1254,124 @@ ${text}`;
   } catch (error) {
     console.error("Translation failed:", error);
     return text; // Return original text if translation fails
+  }
+}
+
+/**
+ * Translate full AnalysisResult to target language using Gemini
+ * يترجم التحليل الكامل إلى اللغة المستهدفة
+ */
+export async function translateAnalysis(
+  data: AnalysisResult, 
+  targetLang: 'ar' | 'en', 
+  apiKey: string
+): Promise<AnalysisResult> {
+  if (!apiKey || !data) return data;
+
+  try {
+    const genAI = new GoogleGenAI({ apiKey });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+
+    const prompt = targetLang === 'ar' 
+      ? `أنت مترجم محترف متخصص في ترجمة تحليلات الأسواق. ترجم كائن JSON التالي من الإنجليزية إلى العربية بالكامل.
+
+═══════════════════════════════════════════════════════════════
+⚠️ قواعد صارمة للترجمة - اتبعها بدقة:
+═══════════════════════════════════════════════════════════════
+
+1️⃣ **البنية:**
+   - حافظ على نفس بنية JSON تماماً (نفس أسماء المفاتيح بالإنجليزية)
+   - لا تغير أسماء المفاتيح (keys) - فقط القيم (values)
+
+2️⃣ **ما يجب ترجمته:**
+   - جميع النصوص والجمل → ترجمة كاملة للعربية
+   - أسماء المنتجات → ترجم للعربية ("Smartphone" → "هاتف ذكي")
+   - أسماء الفئات → ترجم للعربية ("Electronics" → "إلكترونيات")
+   - مستوى الطلب → "Very High" → "مرتفع جداً"
+   - حالة المخزون → "Available" → "متوفر"
+   - أسماء المنصات → "Amazon" → "أمازون", "Noon" → "نون"
+   - طرق الدفع → "Credit Card" → "بطاقة ائتمان"
+   - طرق الشحن → "Express Shipping" → "شحن سريع"
+   - التوصيات → جمل عربية كاملة وسليمة
+   - GO → "ابدأ الآن"
+   - NO-GO → "لا يُنصح"
+   - PROCEED WITH CAUTION → "تقدم بحذر"
+
+3️⃣ **ما لا يجب ترجمته:**
+   - الأرقام (123.45) تبقى كما هي
+   - الروابط (URLs) تبقى كما هي
+   - التواريخ تبقى بنفس الصيغة
+
+4️⃣ **جودة الترجمة:**
+   - استخدم عربية فصحى سليمة
+   - الجمل يجب أن تكون مفهومة ومترابطة
+   - لا تترك أي كلمة إنجليزية في النص المترجم
+
+5️⃣ **الإخراج:**
+   - أرجع JSON صالح فقط
+   - بدون أي شرح أو تعليق
+   - بدون markdown code blocks
+
+JSON للترجمة:
+${JSON.stringify(data, null, 2)}`
+      : `You are a professional translator specializing in market analysis translations. Translate the following JSON object from Arabic to English completely.
+
+═══════════════════════════════════════════════════════════════
+⚠️ Strict Translation Rules - Follow precisely:
+═══════════════════════════════════════════════════════════════
+
+1️⃣ **Structure:**
+   - Keep the exact same JSON structure (same key names in English)
+   - Do not change key names - only values
+
+2️⃣ **What to translate:**
+   - All texts and sentences → Complete English translation
+   - Product names → Translate to English ("هاتف ذكي" → "Smartphone")
+   - Category names → Translate to English ("إلكترونيات" → "Electronics")
+   - Demand level → "مرتفع جداً" → "Very High"
+   - Stock status → "متوفر" → "Available"
+   - Platform names → "أمازون" → "Amazon", "نون" → "Noon"
+   - Payment methods → "بطاقة ائتمان" → "Credit Card"
+   - Shipping methods → "شحن سريع" → "Express Shipping"
+   - Recommendations → Complete, fluent English sentences
+   - "ابدأ الآن" → GO
+   - "لا يُنصح" → NO-GO
+   - "تقدم بحذر" → PROCEED WITH CAUTION
+
+3️⃣ **What NOT to translate:**
+   - Numbers (123.45) stay as is
+   - URLs stay as is
+   - Dates stay in same format
+
+4️⃣ **Translation quality:**
+   - Use proper, professional English
+   - Sentences should be clear and coherent
+   - Do not leave any Arabic word in translated text
+
+5️⃣ **Output:**
+   - Return valid JSON only
+   - No explanation or comments
+   - No markdown code blocks
+
+JSON to translate:
+${JSON.stringify(data, null, 2)}`;
+
+    const result = await model.generateContent(prompt);
+    let responseText = result.response.text().trim();
+    
+    // تنظيف الاستجابة من أي نص إضافي
+    // إزالة markdown code blocks إن وجدت
+    responseText = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+    
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      responseText = jsonMatch[0];
+    }
+    
+    const translated = JSON.parse(responseText) as AnalysisResult;
+    return translated;
+  } catch (error) {
+    console.error("Analysis translation failed:", error);
+    return data; // إرجاع البيانات الأصلية في حالة فشل الترجمة
   }
 }

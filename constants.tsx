@@ -467,6 +467,7 @@ export const COUNTRY_INFO: Record<string, {
   currencyCode: string;
   language: string;
   platforms: string[];
+  topStores: string[];
   marketChar: string;
 }> = {
   'SA': {
@@ -474,6 +475,7 @@ export const COUNTRY_INFO: Record<string, {
     currencyCode: 'SAR',
     language: 'العربية',
     platforms: ['سلة', 'زد', 'نون', 'أمازون السعودية', 'إكسباند كارت'],
+    topStores: ['أمازون السعودية', 'نون', 'جرير', 'إكسترا', 'نمشي', 'شي إن', 'باث اند بودي', 'سيفي', 'العربية للعود', 'الشايع', 'أناس', 'ستايلي', 'VogaCloset', 'ممزورلد', 'أوناس'],
     marketChar: 'سوق شاب ومتنامي مع رؤية 2030 والتحول الرقمي'
   },
   'EG': {
@@ -481,6 +483,7 @@ export const COUNTRY_INFO: Record<string, {
     currencyCode: 'EGP',
     language: 'العربية',
     platforms: ['جوميا', 'سوق.كوم', 'أمازون مصر', 'أوليكس', 'أسواق'],
+    topStores: ['أمازون مصر', 'جوميا', 'نون مصر', 'بي تك', 'رنين', 'كارفور', 'أوليكس'],
     marketChar: 'أكبر سوق عربي بعدد سكان كبير وطلب قوي'
   },
   'AE': {
@@ -488,6 +491,7 @@ export const COUNTRY_INFO: Record<string, {
     currencyCode: 'AED',
     language: 'العربية',
     platforms: ['نون', 'أمازون الإمارات', 'جوميا', 'أسواق', 'دبي ستور'],
+    topStores: ['أمازون الإمارات', 'نون', 'نمشي', 'أوناس', 'كارفور', 'شرف دي جي', 'جامبو'],
     marketChar: 'سوق متطور وعالي الجودة مع طلب على المنتجات الفاخرة'
   },
   'JO': {
@@ -495,6 +499,7 @@ export const COUNTRY_INFO: Record<string, {
     currencyCode: 'JOD',
     language: 'العربية',
     platforms: ['جوميا', 'أسواق', 'أمازون', 'ريحاني'],
+    topStores: ['أمازون', 'جوميا', 'أوبنسوق', 'كارفور', 'ماركا في آي بي'],
     marketChar: 'سوق متوسط الحجم مع نمو تدريجي'
   },
   'KW': {
@@ -502,6 +507,7 @@ export const COUNTRY_INFO: Record<string, {
     currencyCode: 'KWD',
     language: 'العربية',
     platforms: ['نون', 'أمازون', 'جوميا', 'كويت سوق'],
+    topStores: ['نون الكويت', 'أمازون', 'إكسترا الكويت', 'إكس سايت', 'الشايع'],
     marketChar: 'سوق غني بقدرة شرائية عالية'
   },
   'QA': {
@@ -509,6 +515,7 @@ export const COUNTRY_INFO: Record<string, {
     currencyCode: 'QAR',
     language: 'العربية',
     platforms: ['نون', 'أمازون', 'جوميا'],
+    topStores: ['نون قطر', 'أمازون', 'كارفور قطر', 'لولو هايبر ماركت'],
     marketChar: 'سوق صغير الحجم مع دخل عالي جداً'
   },
   'BH': {
@@ -516,6 +523,7 @@ export const COUNTRY_INFO: Record<string, {
     currencyCode: 'BHD',
     language: 'العربية',
     platforms: ['نون', 'أمازون', 'جوميا'],
+    topStores: ['نون البحرين', 'أمازون', 'كارفور البحرين'],
     marketChar: 'سوق صغير لكن بقدرة شرائية عالية'
   },
   'OM': {
@@ -523,6 +531,7 @@ export const COUNTRY_INFO: Record<string, {
     currencyCode: 'OMR',
     language: 'العربية',
     platforms: ['أمازون', 'جوميا', 'عماني سوق'],
+    topStores: ['أمازون عمان', 'لولو هايبر ماركت', 'كارفور عمان'],
     marketChar: 'سوق متنامي مع نمو التجارة الإلكترونية'
   },
   'LB': {
@@ -530,6 +539,7 @@ export const COUNTRY_INFO: Record<string, {
     currencyCode: 'LBP',
     language: 'العربية',
     platforms: ['أمازون', 'جوميا', 'أسواق'],
+    topStores: ['أمازون', 'كارفور لبنان'],
     marketChar: 'سوق متوسط مع تحديات اقتصادية'
   },
   'SY': {
@@ -537,6 +547,7 @@ export const COUNTRY_INFO: Record<string, {
     currencyCode: 'SYP',
     language: 'العربية',
     platforms: ['أسواق محلية', 'سوق إلكترونية'],
+    topStores: ['أسواق محلية'],
     marketChar: 'سوق محدود بسبب الظروف السياسية'
   },
   'IQ': {
@@ -544,6 +555,7 @@ export const COUNTRY_INFO: Record<string, {
     currencyCode: 'IQD',
     language: 'العربية',
     platforms: ['سوق إلكترونية', 'أمازون'],
+    topStores: ['أمازون', 'كارفور العراق', 'أسواق محلية'],
     marketChar: 'سوق نامٍ مع إمكانيات كبيرة'
   },
   'MA': {
@@ -551,6 +563,7 @@ export const COUNTRY_INFO: Record<string, {
     currencyCode: 'MAD',
     language: 'العربية',
     platforms: ['جوميا', 'أمازون', 'أسواق'],
+    topStores: ['جوميا المغرب', 'أفيتو', 'مارجان'],
     marketChar: 'سوق قوي بأفريقيا الشمالية'
   },
   'TN': {
@@ -558,6 +571,7 @@ export const COUNTRY_INFO: Record<string, {
     currencyCode: 'TND',
     language: 'العربية',
     platforms: ['جوميا', 'أمازون', 'أسواق'],
+    topStores: ['جوميا تونس', 'مايشوب تونس'],
     marketChar: 'سوق متوسط مع تطور تكنولوجي'
   },
   'DZ': {
@@ -565,6 +579,7 @@ export const COUNTRY_INFO: Record<string, {
     currencyCode: 'DZD',
     language: 'العربية',
     platforms: ['جوميا', 'أمازون', 'سوق إلكترونية'],
+    topStores: ['جوميا الجزائر', 'أوديكس'],
     marketChar: 'سوق كبير بإمكانيات عالية'
   },
   'IN': {
@@ -572,6 +587,7 @@ export const COUNTRY_INFO: Record<string, {
     currencyCode: 'INR',
     language: 'الإنجليزية',
     platforms: ['Amazon.in', 'Flipkart', 'Snapdeal', 'Myntra'],
+    topStores: ['Amazon India', 'Flipkart', 'Snapdeal', 'Myntra', 'Nykaa', 'Ajio'],
     marketChar: 'أكبر سوق إلكترونية آسيوية بسعر منخفض'
   },
   'PK': {
@@ -579,6 +595,7 @@ export const COUNTRY_INFO: Record<string, {
     currencyCode: 'PKR',
     language: 'الإنجليزية',
     platforms: ['Daraz', 'TCS', 'Telemart', 'Alibaba'],
+    topStores: ['Daraz', 'Telemart', 'Goto.pk', 'PakStyle'],
     marketChar: 'سوق متنامي بسرعة مع مشترين شباب'
   },
   'BD': {
@@ -586,6 +603,7 @@ export const COUNTRY_INFO: Record<string, {
     currencyCode: 'BDT',
     language: 'الإنجليزية',
     platforms: ['Daraz', 'Alibaba', 'AjkerDeal'],
+    topStores: ['Daraz Bangladesh', 'AjkerDeal', 'Evaly', 'Pickaboo'],
     marketChar: 'سوق نام مع تحسن مستمر'
   },
   'SG': {
@@ -593,6 +611,7 @@ export const COUNTRY_INFO: Record<string, {
     currencyCode: 'SGD',
     language: 'الإنجليزية',
     platforms: ['Lazada', 'Shopee', 'Amazon', 'Carousell'],
+    topStores: ['Lazada', 'Shopee', 'Amazon Singapore', 'Qoo10', 'Carousell'],
     marketChar: 'سوق متطور وعالي الجودة'
   },
   'MY': {
@@ -600,6 +619,7 @@ export const COUNTRY_INFO: Record<string, {
     currencyCode: 'MYR',
     language: 'الإنجليزية',
     platforms: ['Lazada', 'Shopee', 'Amazon', 'Mudah'],
+    topStores: ['Lazada Malaysia', 'Shopee Malaysia', 'Zalora', 'Mudah'],
     marketChar: 'سوق متنامي بسرعة في جنوب شرق آسيا'
   },
   'TH': {
@@ -607,6 +627,7 @@ export const COUNTRY_INFO: Record<string, {
     currencyCode: 'THB',
     language: 'الإنجليزية',
     platforms: ['Lazada', 'Shopee', 'JD.co.th', 'Blibli'],
+    topStores: ['Lazada Thailand', 'Shopee Thailand', 'JD Central', 'Central Online'],
     marketChar: 'سوق قوي في جنوب شرق آسيا'
   },
   'PH': {
@@ -614,6 +635,7 @@ export const COUNTRY_INFO: Record<string, {
     currencyCode: 'PHP',
     language: 'الإنجليزية',
     platforms: ['Lazada', 'Shopee', 'Zalora', 'Amazon'],
+    topStores: ['Lazada Philippines', 'Shopee Philippines', 'Zalora', 'BeautyMNL'],
     marketChar: 'سوق شاب ومتنامي'
   },
   'ID': {
@@ -621,6 +643,7 @@ export const COUNTRY_INFO: Record<string, {
     currencyCode: 'IDR',
     language: 'الإنجليزية',
     platforms: ['Tokopedia', 'Shopee', 'Lazada', 'Bukalapak'],
+    topStores: ['Tokopedia', 'Shopee Indonesia', 'Lazada Indonesia', 'Bukalapak', 'Blibli'],
     marketChar: 'أكبر سوق في جنوب شرق آسيا'
   },
   'VN': {
@@ -628,6 +651,7 @@ export const COUNTRY_INFO: Record<string, {
     currencyCode: 'VND',
     language: 'الإنجليزية',
     platforms: ['Shopee', 'Lazada', 'Sendo', 'TikTok Shop'],
+    topStores: ['Shopee Vietnam', 'Lazada Vietnam', 'Tiki', 'Sendo'],
     marketChar: 'سوق نام بسرعة كبيرة'
   },
   'GB': {
@@ -635,6 +659,7 @@ export const COUNTRY_INFO: Record<string, {
     currencyCode: 'GBP',
     language: 'English',
     platforms: ['Amazon UK', 'eBay UK', 'ASOS', 'Etsy'],
+    topStores: ['Amazon UK', 'eBay UK', 'ASOS', 'Argos', 'John Lewis', 'Currys'],
     marketChar: 'سوق متطور وناضج'
   },
   'DE': {
@@ -642,6 +667,7 @@ export const COUNTRY_INFO: Record<string, {
     currencyCode: 'EUR',
     language: 'English',
     platforms: ['Amazon.de', 'eBay', 'Kaufland', 'Otto'],
+    topStores: ['Amazon Germany', 'eBay Germany', 'Otto', 'Zalando', 'MediaMarkt'],
     marketChar: 'سوق قوي وموثوق'
   },
   'FR': {
@@ -649,6 +675,7 @@ export const COUNTRY_INFO: Record<string, {
     currencyCode: 'EUR',
     language: 'English',
     platforms: ['Amazon.fr', 'eBay', 'Cdiscount', 'Fnac'],
+    topStores: ['Amazon France', 'Cdiscount', 'Fnac', 'Veepee', 'La Redoute'],
     marketChar: 'سوق متطور بمعايير عالية'
   },
   'ES': {
@@ -656,6 +683,7 @@ export const COUNTRY_INFO: Record<string, {
     currencyCode: 'EUR',
     language: 'English',
     platforms: ['Amazon.es', 'eBay', 'Mercado', 'Carrefour'],
+    topStores: ['Amazon Spain', 'El Corte Inglés', 'PcComponentes', 'Carrefour'],
     marketChar: 'سوق جيد مع منافسة قوية'
   },
   'IT': {
@@ -663,6 +691,7 @@ export const COUNTRY_INFO: Record<string, {
     currencyCode: 'EUR',
     language: 'English',
     platforms: ['Amazon.it', 'eBay', 'Subito', 'Unieuro'],
+    topStores: ['Amazon Italy', 'eBay Italy', 'Unieuro', 'MediaWorld'],
     marketChar: 'سوق متطور بمعايير عالية'
   },
   'NL': {
@@ -670,6 +699,7 @@ export const COUNTRY_INFO: Record<string, {
     currencyCode: 'EUR',
     language: 'English',
     platforms: ['Amazon.nl', 'eBay', 'Bol.com', 'Coolblue'],
+    topStores: ['Bol.com', 'Coolblue', 'Amazon Netherlands', 'Zalando'],
     marketChar: 'سوق متطور ومنفتح'
   },
   'SE': {
@@ -677,6 +707,7 @@ export const COUNTRY_INFO: Record<string, {
     currencyCode: 'SEK',
     language: 'English',
     platforms: ['Amazon.se', 'eBay', 'Webhallen', 'Tradera'],
+    topStores: ['Amazon Sweden', 'CDON', 'Webhallen', 'Elgiganten'],
     marketChar: 'سوق متطور مع معايير عالية'
   },
   'CH': {
@@ -684,6 +715,7 @@ export const COUNTRY_INFO: Record<string, {
     currencyCode: 'CHF',
     language: 'English',
     platforms: ['Amazon', 'Galaxus', 'Ricardo', 'Migros'],
+    topStores: ['Galaxus', 'Digitec', 'Migros', 'Coop'],
     marketChar: 'سوق عالي الجودة والأسعار'
   },
   'AT': {
@@ -691,6 +723,7 @@ export const COUNTRY_INFO: Record<string, {
     currencyCode: 'EUR',
     language: 'English',
     platforms: ['Amazon.at', 'eBay', 'Willhaben', 'Alternate'],
+    topStores: ['Amazon Austria', 'Willhaben', 'MediaMarkt', 'Conrad'],
     marketChar: 'سوق متطور في وسط أوروبا'
   },
   'PL': {
@@ -698,6 +731,7 @@ export const COUNTRY_INFO: Record<string, {
     currencyCode: 'PLN',
     language: 'English',
     platforms: ['Amazon.pl', 'Allegro', 'OLX', 'eBay'],
+    topStores: ['Allegro', 'Amazon Poland', 'OLX Poland', 'Ceneo'],
     marketChar: 'سوق نام بسرعة في أوروبا الشرقية'
   },
   'NG': {
@@ -705,6 +739,7 @@ export const COUNTRY_INFO: Record<string, {
     currencyCode: 'NGN',
     language: 'English',
     platforms: ['Jumia', 'Konga', 'Jiji', 'OLX'],
+    topStores: ['Jumia Nigeria', 'Konga', 'Jiji', 'PayPorte'],
     marketChar: 'سوق نام بسرعة في أفريقيا'
   },
   'ZA': {
@@ -712,6 +747,7 @@ export const COUNTRY_INFO: Record<string, {
     currencyCode: 'ZAR',
     language: 'English',
     platforms: ['Takealot', 'Superbalist', 'Loot', 'Gumtree'],
+    topStores: ['Takealot', 'Superbalist', 'Makro', 'Game'],
     marketChar: 'سوق متطور في أفريقيا'
   },
   'KE': {
@@ -719,6 +755,7 @@ export const COUNTRY_INFO: Record<string, {
     currencyCode: 'KES',
     language: 'English',
     platforms: ['Jumia', 'OLX', 'Kilimall', 'Sokowatch'],
+    topStores: ['Jumia Kenya', 'Kilimall', 'Sky.Garden', 'Masoko'],
     marketChar: 'سوق نام مع اقتصاد رقمي قوي'
   },
   'US': {
@@ -726,6 +763,7 @@ export const COUNTRY_INFO: Record<string, {
     currencyCode: 'USD',
     language: 'English',
     platforms: ['Amazon.com', 'eBay', 'Walmart', 'Target'],
+    topStores: ['Amazon', 'Walmart', 'eBay', 'Target', 'Best Buy', 'Costco', 'Home Depot'],
     marketChar: 'أكبر سوق إلكترونية في العالم'
   },
   'CA': {
@@ -733,6 +771,7 @@ export const COUNTRY_INFO: Record<string, {
     currencyCode: 'CAD',
     language: 'English',
     platforms: ['Amazon.ca', 'eBay', 'Shopify', 'Kijiji'],
+    topStores: ['Amazon Canada', 'Walmart Canada', 'Best Buy Canada', 'Canadian Tire'],
     marketChar: 'سوق متطور وقوي'
   },
   'MX': {
@@ -740,6 +779,7 @@ export const COUNTRY_INFO: Record<string, {
     currencyCode: 'MXN',
     language: 'Spanish',
     platforms: ['Mercado Libre', 'Amazon.mx', 'OLX', 'Shopify'],
+    topStores: ['Mercado Libre', 'Amazon Mexico', 'Liverpool', 'Palacio de Hierro'],
     marketChar: 'سوق متنامي في أمريكا اللاتينية'
   },
   'BR': {
@@ -747,6 +787,7 @@ export const COUNTRY_INFO: Record<string, {
     currencyCode: 'BRL',
     language: 'Portuguese',
     platforms: ['Mercado Livre', 'B2Brazil', 'Amazon.br', 'OLX'],
+    topStores: ['Mercado Livre', 'Amazon Brazil', 'Magazine Luiza', 'Americanas'],
     marketChar: 'أكبر سوق في أمريكا اللاتينية'
   },
   'AR': {
@@ -754,6 +795,7 @@ export const COUNTRY_INFO: Record<string, {
     currencyCode: 'ARS',
     language: 'Spanish',
     platforms: ['Mercado Libre', 'Amazon.ar', 'OLX', 'Tiendamia'],
+    topStores: ['Mercado Libre', 'Garbarino', 'Fravega', 'Musimundo'],
     marketChar: 'سوق قوي مع منافسة عالية'
   },
 };

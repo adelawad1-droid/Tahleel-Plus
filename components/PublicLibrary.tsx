@@ -91,6 +91,11 @@ export const PublicLibrary: React.FC<Props> = ({ lang, user, onNavigateToAuth })
   };
 
   if (selectedAnalysis) {
+    // اختيار النسخة المناسبة حسب اللغة الحالية
+    const displayData = isRtl 
+      ? (selectedAnalysis.dataAr || selectedAnalysis.data) 
+      : (selectedAnalysis.dataEn || selectedAnalysis.data);
+    
     return (
       <div className="min-h-screen bg-slate-50 py-8 px-4">
         <div className="max-w-7xl mx-auto">
@@ -103,7 +108,20 @@ export const PublicLibrary: React.FC<Props> = ({ lang, user, onNavigateToAuth })
             </svg>
             {isRtl ? 'العودة للمكتبة' : 'Back to Library'}
           </button>
-          <AnalysisDashboard data={selectedAnalysis.data} lang={lang} />
+          {/* مؤشر اللغة المتاحة */}
+          <div className="flex gap-2 mb-4">
+            {selectedAnalysis.dataAr && (
+              <span className="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full font-bold">
+                🇸🇦 {isRtl ? 'عربي متوفر' : 'Arabic Available'}
+              </span>
+            )}
+            {selectedAnalysis.dataEn && (
+              <span className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-bold">
+                🇬🇧 {isRtl ? 'إنجليزي متوفر' : 'English Available'}
+              </span>
+            )}
+          </div>
+          <AnalysisDashboard data={displayData} lang={lang} />
         </div>
       </div>
     );

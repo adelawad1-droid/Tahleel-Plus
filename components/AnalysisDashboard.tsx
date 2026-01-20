@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { AnalysisResult, Language } from '../types';
 import { TRANSLATIONS, REGIONS } from '../constants';
-import { translateToArabic } from '../services/geminiService';
+import { translateToArabic, translateAnalysis } from '../services/geminiService';
 import { saveAnalysis, checkExistingSavedAnalysis } from '../services/userService';
 import { publishAnalysisByUser } from '../services/publicLibraryService';
-import { openPrintWindow } from '../services/printService';
+import { openPrintWindow, downloadAsPDF } from '../services/printService';
 import { auth } from '../services/firebase';
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ScatterChart, Scatter
 } from 'recharts';
 import {
-  TrendingUp, TrendingDown, Users, Target, Zap, AlertCircle, CheckCircle, Clock, MapPin, Eye, Printer, Download, Share2, Lightbulb, Upload
+  TrendingUp, TrendingDown, Users, Target, Zap, AlertCircle, CheckCircle, Clock, MapPin, Eye, Printer, Download, Share2, Lightbulb, Upload, FileDown, BookmarkPlus
 } from 'lucide-react';
 
 interface Props {
@@ -32,6 +32,8 @@ export const AnalysisDashboard: React.FC<Props> = ({ data, lang, apiKey, userId,
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [translatedSummary, setTranslatedSummary] = useState<string>(data.summary);
   const [currentSavedId, setCurrentSavedId] = useState<string | null>(null); // تخزين ID التحليل المحفوظ
+  const [isTranslating, setIsTranslating] = useState(false); // حالة الترجمة
+  const [translatedData, setTranslatedData] = useState<AnalysisResult | null>(null); // النسخة المترجمة
   const t = TRANSLATIONS[lang];
   const isRtl = lang === 'ar';
 
@@ -78,12 +80,17 @@ export const AnalysisDashboard: React.FC<Props> = ({ data, lang, apiKey, userId,
     openPrintWindow(data, lang);
   };
 
+  // Handle PDF Download - تحميل كملف PDF
+  const handleDownloadPDF = () => {
+    downloadAsPDF(data, lang);
+  };
+
   // Handle Print Single Section - استخدام السكربت الاحترافي
   const handlePrintSection = (sectionName: string) => {
     openPrintWindow(data, lang, sectionName);
   };
 
-  // Handle Save and Publish
+  // Handle Save and Publish with Translation
   const handleSave = async () => {
     if (!userId) {
       alert(isRtl ? 'يجب تسجيل الدخول لحفظ النتائج' : 'Please login to save results');
@@ -114,8 +121,43 @@ export const AnalysisDashboard: React.FC<Props> = ({ data, lang, apiKey, userId,
         }
       }
       
-      // حفظ التحليل الجديد
-      const savedId = await saveAnalysis(userId, queryStr, data, region);
+      // ترجمة التحليل للغة الأخرى قبل الحفظ
+      setIsTranslating(true);
+      let dataAr: AnalysisResult | undefined;
+      let dataEn: AnalysisResult | undefined;
+      
+      if (apiKey) {
+        try {
+          const targetLang = isRtl ? 'en' : 'ar';
+          const translated = await translateAnalysis(data, targetLang, apiKey);
+          setTranslatedData(translated);
+          
+          if (isRtl) {
+            // البحث كان بالعربي - النسخة الأصلية عربي
+            dataAr = data;
+            dataEn = translated;
+          } else {
+            // البحث كان بالإنجليزي - النسخة الأصلية إنجليزي
+            dataEn = data;
+            dataAr = translated;
+          }
+        } catch (translationError) {
+          console.error('Translation failed, saving original only:', translationError);
+          // في حالة فشل الترجمة، نحفظ النسخة الأصلية فقط
+        }
+      }
+      setIsTranslating(false);
+      
+      // حفظ التحليل مع النسختين
+      const savedId = await saveAnalysis(
+        userId, 
+        queryStr, 
+        data, 
+        region,
+        isRtl ? 'ar' : 'en',
+        dataAr,
+        dataEn
+      );
       setCurrentSavedId(savedId); // نخزن الـ ID
       setSaved(true);
       
@@ -1746,30 +1788,49 @@ export const AnalysisDashboard: React.FC<Props> = ({ data, lang, apiKey, userId,
         className="relative z-20 flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl border border-slate-200 shadow-lg bg-white/95 backdrop-blur no-print mb-6"
       >
         <div className={`flex items-center gap-3 ${isRtl ? 'flex-row-reverse order-2' : ''}`}>
+          {/* زر تحميل PDF */}
+          <button
+            onClick={handleDownloadPDF}
+            className={`px-6 py-3 bg-rose-600 hover:bg-rose-700 text-white font-black rounded-2xl transition-all shadow-lg hover:shadow-xl transform hover:scale-105 duration-200 flex items-center gap-2 uppercase tracking-widest ${isRtl ? 'flex-row-reverse' : ''}`}
+            title={isRtl ? 'تحميل PDF' : 'Download PDF'}
+          >
+            <FileDown className="w-5 h-5" />
+            {isRtl ? 'تحميل PDF' : 'PDF'}
+          </button>
+          {/* زر الطباعة */}
           <button
             onClick={handlePrint}
             className={`px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl transition-all shadow-lg hover:shadow-xl transform hover:scale-105 duration-200 flex items-center gap-2 uppercase tracking-widest ${isRtl ? 'flex-row-reverse' : ''}`}
             title={isRtl ? 'طباعة التقرير الكامل' : 'Print Full Report'}
           >
             <Printer className="w-5 h-5" />
-            {isRtl ? 'طباعة كاملة' : 'Print All'}
+            {isRtl ? 'طباعة' : 'Print'}
           </button>
           <button
             onClick={handleSave}
+            disabled={isTranslating}
             className={`px-6 py-3 font-black rounded-2xl transition-all shadow-lg hover:shadow-xl transform hover:scale-105 duration-200 flex items-center gap-2 uppercase tracking-widest ${
-              saved ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'
-            } text-white ${isRtl ? 'flex-row-reverse' : ''}`}
-            title={isRtl ? 'حفظ' : 'Save'}
+              isTranslating ? 'bg-yellow-500 hover:bg-yellow-600' : saved ? 'bg-green-600 hover:bg-green-700' : 'bg-emerald-600 hover:bg-emerald-700'
+            } text-white ${isRtl ? 'flex-row-reverse' : ''} ${isTranslating ? 'cursor-wait' : ''}`}
+            title={isRtl ? 'حفظ في المكتبة' : 'Save to Library'}
           >
-            {saved ? (
+            {isTranslating ? (
+              <>
+                <svg className="animate-spin w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                {isRtl ? 'جاري الترجمة...' : 'Translating...'}
+              </>
+            ) : saved ? (
               <>
                 <CheckCircle className="w-5 h-5" />
                 {isRtl ? 'تم الحفظ' : 'Saved'}
               </>
             ) : (
               <>
-                <Download className="w-5 h-5" />
-                {isRtl ? 'حفظ' : 'Save'}
+                <BookmarkPlus className="w-5 h-5" />
+                {isRtl ? 'حفظ في المكتبة' : 'Save to Library'}
               </>
             )}
           </button>
@@ -1802,9 +1863,12 @@ export const AnalysisDashboard: React.FC<Props> = ({ data, lang, apiKey, userId,
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => {
+                  setActiveTab(tab.id as any);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
                 className={`whitespace-nowrap px-4 md:px-6 py-2.5 md:py-3 font-bold text-xs md:text-sm rounded-lg transition-all text-white ${tab.bg} ${
-                  isActive ? 'ring-2 ring-offset-1 ring-slate-800' : 'opacity-75'
+                  isActive ? 'ring-1 ring-gray-300/50' : 'opacity-75'
                 }`}
               >
                 {tab.label}
@@ -1826,11 +1890,18 @@ export const AnalysisDashboard: React.FC<Props> = ({ data, lang, apiKey, userId,
           const prevIndex = currentIndex > 0 ? currentIndex - 1 : null;
           const nextIndex = currentIndex < tabIds.length - 1 ? currentIndex + 1 : null;
           
+          // دالة للتنقل مع التمرير لأعلى الصفحة
+          const navigateToTab = (tabId: string) => {
+            setActiveTab(tabId as any);
+            // التمرير لأعلى الصفحة
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          };
+          
           const NavigationButtons = () => (
             <div className="flex items-center justify-between mt-8 pt-6 border-t-2 border-slate-200 no-print">
               {prevIndex !== null ? (
                 <button
-                  onClick={() => setActiveTab(tabIds[prevIndex] as any)}
+                  onClick={() => navigateToTab(tabIds[prevIndex])}
                   className="flex items-center gap-2 px-5 py-3 bg-slate-600 hover:bg-slate-700 text-white rounded-xl transition-all text-sm font-bold"
                 >
                   <span>←</span>
@@ -1844,7 +1915,7 @@ export const AnalysisDashboard: React.FC<Props> = ({ data, lang, apiKey, userId,
               
               {nextIndex !== null ? (
                 <button
-                  onClick={() => setActiveTab(tabIds[nextIndex] as any)}
+                  onClick={() => navigateToTab(tabIds[nextIndex])}
                   className="flex items-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all text-sm font-bold"
                 >
                   <span>{isRtl ? 'التالي:' : 'Next:'} {tabLabels[nextIndex]}</span>

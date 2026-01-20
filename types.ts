@@ -52,6 +52,9 @@ export interface SavedAnalysis {
   query: string;
   normalizedQuery?: string;
   data: AnalysisResult;
+  dataAr?: AnalysisResult; // النسخة العربية المترجمة
+  dataEn?: AnalysisResult; // النسخة الإنجليزية المترجمة
+  originalLang?: 'ar' | 'en'; // لغة البحث الأصلية
   region?: string; // 'SA', 'AE', 'EG', etc.
   isPublished?: boolean; // هل تم نشره في المكتبة العامة
 }
@@ -76,6 +79,9 @@ export interface PublicAnalysis {
   query: string;
   normalizedQuery?: string;
   data: AnalysisResult;
+  dataAr?: AnalysisResult; // النسخة العربية المترجمة
+  dataEn?: AnalysisResult; // النسخة الإنجليزية المترجمة
+  originalLang?: 'ar' | 'en'; // لغة التحليل الأصلية
   publishedAt: number;
   publishedBy: string;
   publishedByEmail?: string; // إيميل الناشر

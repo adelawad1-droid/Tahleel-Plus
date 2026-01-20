@@ -78,6 +78,11 @@ export const SavedLibrary: React.FC<Props> = ({ lang }) => {
   };
 
   if (selected) {
+    // اختيار النسخة المناسبة حسب اللغة الحالية
+    const displayData = isRtl 
+      ? (selected.dataAr || selected.data) 
+      : (selected.dataEn || selected.data);
+    
     return (
       <div className="space-y-6">
         <button 
@@ -89,8 +94,21 @@ export const SavedLibrary: React.FC<Props> = ({ lang }) => {
         <div className="bg-white p-6 rounded-3xl border border-blue-100 mb-8">
            <h2 className="text-xl font-black text-slate-900">{selected.query}</h2>
            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{new Date(selected.timestamp).toLocaleDateString()}</p>
+           {/* مؤشر اللغة المتاحة */}
+           <div className="flex gap-2 mt-2">
+             {selected.dataAr && (
+               <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-bold">
+                 🇸🇦 {isRtl ? 'عربي متوفر' : 'Arabic Available'}
+               </span>
+             )}
+             {selected.dataEn && (
+               <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-bold">
+                 🇬🇧 {isRtl ? 'إنجليزي متوفر' : 'English Available'}
+               </span>
+             )}
+           </div>
         </div>
-        <AnalysisDashboard data={selected.data} lang={lang} />
+        <AnalysisDashboard data={displayData} lang={lang} />
       </div>
     );
   }

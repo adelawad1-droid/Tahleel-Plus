@@ -86,7 +86,15 @@ export const updateAppConfig = async (config: AppConfig) => {
   await setDoc(docRef, { ...config, lastUpdated: Date.now() });
 };
 
-export const saveAnalysis = async (userId: string, queryStr: string, data: AnalysisResult, region: string = 'SA'): Promise<string> => {
+export const saveAnalysis = async (
+  userId: string, 
+  queryStr: string, 
+  data: AnalysisResult, 
+  region: string = 'SA',
+  originalLang: 'ar' | 'en' = 'ar',
+  dataAr?: AnalysisResult,
+  dataEn?: AnalysisResult
+): Promise<string> => {
   try {
     const normalizedQuery = normalizeQuery(queryStr);
     // أولاً: تحقق من وجود تحليل مشابه محفوظ بالفعل
@@ -98,7 +106,7 @@ export const saveAnalysis = async (userId: string, queryStr: string, data: Analy
       return existingAnalysis.id!;
     }
     
-    // إذا لم يكن موجوداً، احفظ نسخة جديدة
+    // إذا لم يكن موجوداً، احفظ نسخة جديدة مع النسختين المترجمتين
     const analysisRef = collection(db, 'saved_analyses');
     const newDoc: SavedAnalysis = {
       userId,
@@ -106,6 +114,9 @@ export const saveAnalysis = async (userId: string, queryStr: string, data: Analy
       normalizedQuery,
       timestamp: Date.now(),
       data,
+      dataAr: dataAr || (originalLang === 'ar' ? data : undefined),
+      dataEn: dataEn || (originalLang === 'en' ? data : undefined),
+      originalLang,
       region,
       isPublished: false
     };
