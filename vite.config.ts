@@ -12,7 +12,9 @@ export default defineConfig(({ mode }) => {
       },
       preview: {
         port: 3000,
+        historyApiFallback: true,
       },
+      appType: 'spa',
       plugins: [react()],
       define: {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
@@ -26,6 +28,7 @@ export default defineConfig(({ mode }) => {
       build: {
         outDir: 'dist',
         emptyOutDir: true,
+        copyPublicDir: true,
         rollupOptions: {
           input: {
             main: path.resolve(__dirname, 'index.html'),
